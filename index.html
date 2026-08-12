@@ -1765,9 +1765,18 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     document.getElementById('radioScreenBarFill').style.width = progress + '%';
     document.getElementById('radioProgressLabel').textContent = progress + '% repaired';
 
+    const chipCount = getInvQty('parts', 'RADIO CHIP');
     const repairBtn = document.getElementById('repairRadioBtn');
-    repairBtn.textContent = progress >= 100 ? 'FULLY REPAIRED' : 'REPAIR RADIO';
-    repairBtn.classList.toggle('disabled', progress >= 100);
+    if(progress >= 100){
+      repairBtn.textContent = 'FULLY REPAIRED';
+      repairBtn.classList.add('disabled');
+    } else if(chipCount > 0){
+      repairBtn.textContent = 'USE RADIO CHIP (' + chipCount + ')';
+      repairBtn.classList.remove('disabled');
+    } else {
+      repairBtn.textContent = 'NEED A RADIO CHIP';
+      repairBtn.classList.add('disabled');
+    }
 
     const list = document.getElementById('fragmentList');
     list.innerHTML = '';
@@ -1778,7 +1787,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       card.innerHTML =
         '<div class="fhead"><span class="flabel">' + (unlocked ? 'SIGNAL FRAGMENT' : 'LOCKED SIGNAL') + '</span>' +
         '<span class="fpercent">' + frag.threshold + '%</span></div>' +
-        '<div class="ftext">' + (unlocked ? frag.text : 'Repair the radio further to catch this transmission.') + '</div>';
+        '<div class="ftext">' + (unlocked ? frag.text : 'Find a Radio Chip out there to catch this transmission.') + '</div>';
       list.appendChild(card);
     });
   }
@@ -1795,12 +1804,25 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       showToast('RADIO FULLY REPAIRED');
       return;
     }
+    const chips = inventoryData.parts && inventoryData.parts.find(i => i.name === 'RADIO CHIP');
+    if(!chips || chips.qty <= 0){
+      showToast('YOU NEED A RADIO CHIP — FIND ONE ON A MISSION');
+      return;
+    }
+
+    chips.qty -= 1;
+    if(chips.qty <= 0){
+      inventoryData.parts = inventoryData.parts.filter(i => i.qty > 0);
+    }
+
     const previous = playerState.radio_progress;
-    playerState.radio_progress = Math.min(100, playerState.radio_progress + 8);
+    playerState.radio_progress = Math.min(100, playerState.radio_progress + 20);
     document.getElementById('radioBarFill').style.width = playerState.radio_progress + '%';
     showToast(playerState.radio_progress + '% REPAIRED');
     queueSave();
     renderRadioScreen();
+    renderInventory(document.querySelector('.inv-tab.active')?.dataset.tab || 'food');
+    renderKitchen();
 
     const newlyUnlocked = RADIO_FRAGMENTS.find(f => f.threshold > previous && f.threshold <= playerState.radio_progress);
     if(newlyUnlocked){
@@ -1831,7 +1853,8 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       desc: 'Search a wrecked motorcycle workshop for usable parts.',
       image: 'mission_garage.jpg',
       loot: [ {icon:'⚙️', qty:1, name:'MOTOR PART', rarity:'UNCOMMON', cat:'parts'},
-              {icon:'🔧', qty:2, name:'TOOL KIT', rarity:'COMMON', cat:'parts'} ],
+              {icon:'🔧', qty:2, name:'TOOL KIT', rarity:'COMMON', cat:'parts'},
+              {icon:'📟', qty:1, name:'RADIO CHIP', rarity:'★ RARE — REPAIRS THE FAMILY RADIO', cat:'parts', rare:true} ],
     },
     {
       id: 'depot', name: 'MILITARY DEPOT', level: 15, duration_seconds: 45, xp: 60,
@@ -1839,7 +1862,8 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       image: 'mission_depot.jpg',
       loot: [ {icon:'🍖', qty:1, name:'MILITARY RATION', rarity:'UNCOMMON', cat:'food'},
               {icon:'💊', qty:1, name:'ANTIBIOTIC', rarity:'UNCOMMON', cat:'medical'},
-              {icon:'☕', qty:1, name:'COFFEE', rarity:'★ RARE — ENERGY BOOST', cat:'food', rare:true} ],
+              {icon:'☕', qty:1, name:'COFFEE', rarity:'★ RARE — ENERGY BOOST', cat:'food', rare:true},
+              {icon:'📟', qty:1, name:'RADIO CHIP', rarity:'★ RARE — REPAIRS THE FAMILY RADIO', cat:'parts', rare:true} ],
     },
   ];
 
@@ -1973,6 +1997,13 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     mission.loot.forEach(item => {
       const qty = Math.max(0, Math.round(item.qty * fraction));
       if(qty <= 0) return;
+
+      // Radio Chip is a true rare drop, not guaranteed like other loot
+      if(item.name === 'RADIO CHIP'){
+        const dropChance = 0.4 * fraction;
+        if(Math.random() > dropChance) return;
+      }
+
       const cat = item.cat;
       if(!inventoryData[cat]) inventoryData[cat] = [];
       const existing = inventoryData[cat].find(i => i.name === item.name);
