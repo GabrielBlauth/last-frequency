@@ -233,7 +233,7 @@
   .risk-alert.show{ display:flex; }
 
   .loot-preview{ display:flex; gap:7px; flex-wrap:wrap; }
-  .loot-item{ width:36px; height:36px; background: linear-gradient(160deg,#282b35,#191a20); border:2px solid #000; box-shadow: inset -1px -1px 0 #000, inset 1px 1px 0 #454854; display:flex; align-items:center; justify-content:center; font-size:17px;}
+  .loot-item{ width:42px; height:42px; background: linear-gradient(160deg,#282b35,#191a20); border:2px solid #000; box-shadow: inset -1px -1px 0 #000, inset 1px 1px 0 #454854; display:flex; align-items:center; justify-content:center; font-size:21px;}
   .loot-item.unknown{ color:var(--toxic); text-shadow:0 0 8px rgba(155,95,214,0.8); animation: flicker 2s infinite; }
 
   .inv-tabs{ display:flex; gap:4px; }
@@ -302,7 +302,7 @@
   .account-box .email{ font-size:16px; color:var(--bone); word-break:break-all; }
 
   .stats-char-row{ display:flex; gap:8px; margin-top:2px; }
-  .stat-stack{ display:flex; flex-direction:column; gap:6px; width:130px; flex-shrink:0; }
+  .stat-stack{ display:flex; flex-direction:column; gap:6px; width:145px; flex-shrink:0; }
   .stat-stack .stat-pill{
     padding:0; display:flex; align-items:stretch; overflow:hidden;
   }
@@ -312,11 +312,11 @@
   .stat-pill.dirty .stat-mid .lbl,
   .stat-pill.dirty .stat-mid .val{ color: var(--signal); text-shadow:0 0 6px rgba(78,230,168,0.6); }
   .pm-btn{
-    width:22px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
-    font-family:'Press Start 2P'; font-size:13px; color:var(--signal);
-    background:#0d0e11; cursor:pointer; user-select:none;
+    width:30px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    font-family:'Press Start 2P'; font-size:18px; font-weight:bold; color:var(--signal);
+    background:#161a1f; cursor:pointer; user-select:none;
   }
-  .pm-btn.minus{ border-right:2px solid #000; }
+  .pm-btn.minus{ border-right:2px solid #000; color:#ff8080; }
   .pm-btn.plus{ border-left:2px solid #000; }
   .pm-btn.disabled{ opacity:0.25; cursor:not-allowed; }
   .points-box{
@@ -361,10 +361,10 @@
   }
   .reward-row{ display:flex; gap:4px; flex-wrap:wrap; margin:2px 0 1px; }
   .loot-item-sm{
-    width:22px; height:22px;
+    width:30px; height:30px;
     background: linear-gradient(160deg,#282b35,#191a20); border:2px solid #000;
     box-shadow: inset -1px -1px 0 #000, inset 1px 1px 0 #454854;
-    display:flex; align-items:center; justify-content:center; font-size:12px;
+    display:flex; align-items:center; justify-content:center; font-size:17px;
   }
   .loot-item-sm.unknown{ color:var(--toxic); text-shadow:0 0 6px rgba(155,95,214,0.8); animation: flicker 2s infinite; }
 
@@ -565,9 +565,7 @@
             <div class="account-box">
               <div class="lbl">PLAYER ID</div>
               <div class="email" id="accountPlayerId">—</div>
-            </div>
-            <div class="account-box">
-              <div class="lbl">SIGNED IN AS</div>
+              <div class="lbl" style="margin-top:10px;">SIGNED IN AS</div>
               <div class="email" id="accountEmail">—</div>
             </div>
 
@@ -604,12 +602,12 @@
               </div>
             </div>
 
-            <div style="display:flex; gap:8px;">
+            <div id="statChangeButtons" style="display:none; gap:8px;">
               <div class="btn cancel-btn" style="flex:1;" id="cancelStatsBtn">CANCEL CHANGES</div>
               <div class="btn save-btn" style="flex:1;" id="saveStatsBtn">SAVE CHANGES</div>
             </div>
 
-            <div class="btn signal-btn full" id="editCharacterBtn">EDIT CHARACTER</div>
+            <div class="btn gold full" id="editCharacterBtn">EDIT CHARACTER</div>
             <div class="btn gold full" id="notifyBtn" style="margin-top:6px;">ENABLE NOTIFICATIONS</div>
             <div class="btn outline full" id="logoutBtn" style="margin-top:6px;">LOG OUT</div>
             <div class="hint" id="saveStatusHint">Progress saves automatically.</div>
@@ -1002,6 +1000,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     const used = pointsUsed();
     const remaining = (playerState.available_points || 0) - used;
     document.getElementById('availablePointsVal').textContent = String(remaining).padStart(2,'0');
+    document.getElementById('statChangeButtons').style.display = used > 0 ? 'flex' : 'none';
 
     STAT_KEYS.forEach(k => {
       const val = pendingStats[k];
@@ -1737,7 +1736,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         <div class="reward-row">${rewardIcons}</div>
         <div class="meta">
           <span class="duration">⏱ ${formatTime(m.duration_seconds)}</span>
-          <span class="go">${locked ? '🔒 LOCKED' : '▶ GO'}</span>
+          <span class="go">${locked ? '🔒 LOCKED' : 'GO'}</span>
         </div>
       `;
       card.addEventListener('click', () => {
