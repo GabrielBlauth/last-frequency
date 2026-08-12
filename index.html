@@ -378,6 +378,19 @@
     padding:9px; text-align:center; cursor:pointer;
   }
   .recipe-craft-btn.disabled{ background: linear-gradient(160deg,#4a4a4a,#2a2a2a); color:#888; cursor:not-allowed; box-shadow:none; }
+
+  .fragment-card{
+    background: linear-gradient(150deg,#1a1a14,#100f0a); border:2px solid #000;
+    box-shadow: 3px 3px 0 #000, inset 0 0 0 1px #3a2e14;
+    padding:11px;
+  }
+  .fragment-card .fhead{ display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+  .fragment-card .flabel{ font-family:'Press Start 2P'; font-size:7px; color:var(--gold); text-shadow:1px 1px 0 #000; }
+  .fragment-card .fpercent{ font-size:13px; color:var(--ash); }
+  .fragment-card .ftext{ font-size:16px; color:var(--bone); line-height:1.4; font-style:italic; }
+  .fragment-card.locked{ opacity:0.5; }
+  .fragment-card.locked .ftext{ color:var(--ash); font-style:normal; }
+  .fragment-card.locked .flabel{ color:var(--ash); }
   .mission-list-card:active{ transform:translate(1px,1px); }
   .mission-list-card .head{ display:flex; justify-content:space-between; align-items:center; }
   .mission-list-card .name{ font-family:'Press Start 2P'; font-size:8px; color:var(--bone); text-shadow:1px 1px 0 #000; }
@@ -743,6 +756,31 @@
 
           <div class="btn" id="saveAppearanceBtn" style="margin-top:auto;">✔ SAVE APPEARANCE</div>
           <div class="credit-note">Character art: Liberated Pixel Cup (LPC) contributors.<br>CC-BY-SA 3.0 / GPL 3.0 — liberatedpixelcup.github.io</div>
+        </div>
+      </div>
+
+      <!-- FAMILY RADIO OVERLAY -->
+      <div class="screen" id="radioScreen" style="position:absolute; inset:0; z-index:18; display:none;">
+        <div class="statusbar">
+          <span class="back" id="radioBack">‹ BACK</span>
+          <span class="title">FAMILY RADIO</span>
+          <span style="width:40px;"></span>
+        </div>
+
+        <div class="content">
+          <div class="radio-box" style="cursor:default;">
+            <div class="icon">📻</div>
+            <div class="txt">
+              <div class="name">SIGNAL STRENGTH</div>
+              <div class="bar-bg"><div class="bar-fill" id="radioScreenBarFill" style="width:0%"></div></div>
+            </div>
+          </div>
+          <div class="hint" id="radioProgressLabel" style="margin-top:-4px;">0% repaired</div>
+
+          <div class="btn gold full" id="repairRadioBtn">REPAIR RADIO</div>
+
+          <div class="section-lbl" style="margin-top:4px;">SIGNAL LOG</div>
+          <div id="fragmentList" style="display:flex; flex-direction:column; gap:9px; padding-bottom:14px;"></div>
         </div>
       </div>
     </div>
@@ -1702,16 +1740,72 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     });
   });
 
+  // =========================================================
+  // FAMILY RADIO — signal fragments unlocked as it's repaired
+  // =========================================================
+  const RADIO_FRAGMENTS = [
+    { threshold: 20, text: "—can you hear me? It's been so long since this thing worked. I don't know if this is even getting through—" },
+    { threshold: 40, text: "—the dust got into everything after the Blackout. I don't know how much time has passed out there. Days? Weeks?—" },
+    { threshold: 60, text: "—I found something near the old control tower. There's more to this than a blackout. I have to tell you before—" },
+    { threshold: 80, text: "—I'm still here. Some of me remembers, at least. Remember the code we used as kids? Tap twice for yes. I'm tapping—" },
+    { threshold: 100, text: "—look for me at the source, near the tower. I'll try to hold on as long as I can. I promise. Just... keep listening—" },
+  ];
+
+  function openRadioScreen(){
+    renderRadioScreen();
+    document.getElementById('radioScreen').style.display = 'flex';
+  }
+  function closeRadioScreen(){
+    document.getElementById('radioScreen').style.display = 'none';
+  }
+
+  function renderRadioScreen(){
+    if(!playerState) return;
+    const progress = playerState.radio_progress || 0;
+    document.getElementById('radioScreenBarFill').style.width = progress + '%';
+    document.getElementById('radioProgressLabel').textContent = progress + '% repaired';
+
+    const repairBtn = document.getElementById('repairRadioBtn');
+    repairBtn.textContent = progress >= 100 ? 'FULLY REPAIRED' : 'REPAIR RADIO';
+    repairBtn.classList.toggle('disabled', progress >= 100);
+
+    const list = document.getElementById('fragmentList');
+    list.innerHTML = '';
+    RADIO_FRAGMENTS.forEach(frag => {
+      const unlocked = progress >= frag.threshold;
+      const card = document.createElement('div');
+      card.className = 'fragment-card' + (unlocked ? '' : ' locked');
+      card.innerHTML =
+        '<div class="fhead"><span class="flabel">' + (unlocked ? 'SIGNAL FRAGMENT' : 'LOCKED SIGNAL') + '</span>' +
+        '<span class="fpercent">' + frag.threshold + '%</span></div>' +
+        '<div class="ftext">' + (unlocked ? frag.text : 'Repair the radio further to catch this transmission.') + '</div>';
+      list.appendChild(card);
+    });
+  }
+
   document.getElementById('radioBox').addEventListener('click', () => {
+    openRadioScreen();
+  });
+
+  document.getElementById('radioBack').addEventListener('click', closeRadioScreen);
+
+  document.getElementById('repairRadioBtn').addEventListener('click', () => {
     if(!playerState) return;
     if(playerState.radio_progress >= 100){
       showToast('RADIO FULLY REPAIRED');
       return;
     }
+    const previous = playerState.radio_progress;
     playerState.radio_progress = Math.min(100, playerState.radio_progress + 8);
     document.getElementById('radioBarFill').style.width = playerState.radio_progress + '%';
     showToast(playerState.radio_progress + '% REPAIRED');
     queueSave();
+    renderRadioScreen();
+
+    const newlyUnlocked = RADIO_FRAGMENTS.find(f => f.threshold > previous && f.threshold <= playerState.radio_progress);
+    if(newlyUnlocked){
+      setTimeout(() => showToast('NEW SIGNAL FRAGMENT CAUGHT'), 900);
+    }
   });
 
   // ---------- Missions ----------
