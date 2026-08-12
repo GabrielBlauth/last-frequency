@@ -207,6 +207,9 @@
   .btn.ember{ background: linear-gradient(160deg,var(--ember-hot),var(--ember-dark)); box-shadow: 3px 3px 0 #000, inset 0 2px 0 rgba(255,255,255,0.3), 0 0 12px rgba(255,106,61,0.4);}
   .btn.gold{ background: linear-gradient(160deg,#ffe27a,#c9942a); }
   .btn.outline{ background: linear-gradient(160deg,#2a2c34,#17181d); color:var(--bone); }
+  .btn.signal-btn{ background: linear-gradient(160deg,var(--signal),var(--signal-dark)); color:#000; }
+  .btn.save-btn{ background: linear-gradient(160deg,#3fae82,#1a5c42); color:#fff; }
+  .btn.cancel-btn{ background: linear-gradient(160deg,#c85a5a,#7a2b2b); color:#fff; }
   .btn.full{width:100%;}
   .btn.disabled{ opacity:0.4; cursor:not-allowed; }
 
@@ -251,7 +254,8 @@
   .navbar{ display:flex; background: linear-gradient(0deg,#000,#0d0e11); border-top:3px solid #000; position:relative; z-index:2; padding-bottom: env(safe-area-inset-bottom); }
   .navitem{ flex:1; text-align:center; padding:9px 2px 7px; font-family:'Press Start 2P'; font-size:6px; color:var(--ash); border-right:1px solid #000; cursor:pointer;}
   .navitem:last-child{border-right:none;}
-  .navitem .ic{font-size:19px; display:block; margin-bottom:3px;}
+  .navitem .ic{ display:block; margin:0 auto 3px; width:19px; height:19px; }
+  .navitem .ic svg{ width:100%; height:100%; display:block; color: var(--ash) !important; }
   .navitem.active{ color:var(--signal); background: linear-gradient(0deg,#152119,#0d0e11); box-shadow: inset 0 3px 0 var(--signal); text-shadow:0 0 6px rgba(78,230,168,0.6);}
 
   .toast{
@@ -298,8 +302,29 @@
   .account-box .email{ font-size:16px; color:var(--bone); word-break:break-all; }
 
   .stats-char-row{ display:flex; gap:8px; margin-top:2px; }
-  .stat-stack{ display:flex; flex-direction:column; gap:6px; width:100px; flex-shrink:0; }
-  .stat-stack .stat-pill{ padding:6px 4px; }
+  .stat-stack{ display:flex; flex-direction:column; gap:6px; width:130px; flex-shrink:0; }
+  .stat-stack .stat-pill{
+    padding:0; display:flex; align-items:stretch; overflow:hidden;
+  }
+  .stat-mid{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:5px 2px; }
+  .stat-mid .lbl{ font-family:'Press Start 2P'; font-size:6px; color:var(--bone); font-weight:bold; display:block; margin-bottom:3px; }
+  .stat-mid .val{ font-size:16px; color:var(--bone); font-weight:bold; }
+  .stat-pill.dirty .stat-mid .lbl,
+  .stat-pill.dirty .stat-mid .val{ color: var(--signal); text-shadow:0 0 6px rgba(78,230,168,0.6); }
+  .pm-btn{
+    width:22px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    font-family:'Press Start 2P'; font-size:13px; color:var(--signal);
+    background:#0d0e11; cursor:pointer; user-select:none;
+  }
+  .pm-btn.minus{ border-right:2px solid #000; }
+  .pm-btn.plus{ border-left:2px solid #000; }
+  .pm-btn.disabled{ opacity:0.25; cursor:not-allowed; }
+  .points-box{
+    background: linear-gradient(160deg,#1c1e26,#131418); border:2px solid #000; padding:11px;
+    box-shadow: inset 0 0 0 1px #2c2e37;
+    display:flex; align-items:center; gap:8px; font-size:16px; color:var(--ash);
+  }
+  .points-box .points-val{ font-family:'Press Start 2P'; font-size:16px; color:var(--signal); text-shadow:0 0 6px rgba(78,230,168,0.6); }
   .char-preview-box{
     flex:1;
     min-height:170px;
@@ -503,8 +528,8 @@
             </div>
 
             <div style="display:flex; gap:6px; margin-top:auto;" id="missionActions">
-              <div class="btn ember" style="flex:1;" id="fightBtn">⚔ FIGHT</div>
-              <div class="btn outline" style="flex:1;" id="retreatBtn">🏃 RETREAT</div>
+              <div class="btn ember" style="flex:1;" id="fightBtn">FIGHT</div>
+              <div class="btn outline" style="flex:1;" id="retreatBtn">RETREAT</div>
             </div>
             <div class="hint">Timer keeps running even if you close the app — resources are earned by real time.</div>
           </div>
@@ -546,21 +571,47 @@
               <div class="email" id="accountEmail">—</div>
             </div>
 
+            <div class="points-box">
+              <span>Available points:</span>
+              <span class="points-val" id="availablePointsVal">00</span>
+            </div>
+
             <div class="stats-char-row">
               <div class="stat-stack">
-                <div class="stat-pill"><span class="lbl">HP</span><span class="val" id="statusHpVal">100</span></div>
-                <div class="stat-pill"><span class="lbl">ENR</span><span class="val" id="statusEnrVal">100</span></div>
-                <div class="stat-pill"><span class="lbl">STR</span><span class="val" id="statusStrVal">10</span></div>
-                <div class="stat-pill"><span class="lbl">LCK</span><span class="val" id="statusLckVal">10</span></div>
+                <div class="stat-pill" data-stat="hp">
+                  <div class="pm-btn minus" data-stat-btn="hp" data-dir="-1">−</div>
+                  <div class="stat-mid"><span class="lbl">HP</span><span class="val" id="statusHpVal">10</span></div>
+                  <div class="pm-btn plus" data-stat-btn="hp" data-dir="1">+</div>
+                </div>
+                <div class="stat-pill" data-stat="energy">
+                  <div class="pm-btn minus" data-stat-btn="energy" data-dir="-1">−</div>
+                  <div class="stat-mid"><span class="lbl">ENR</span><span class="val" id="statusEnrVal">10</span></div>
+                  <div class="pm-btn plus" data-stat-btn="energy" data-dir="1">+</div>
+                </div>
+                <div class="stat-pill" data-stat="strength">
+                  <div class="pm-btn minus" data-stat-btn="strength" data-dir="-1">−</div>
+                  <div class="stat-mid"><span class="lbl">STR</span><span class="val" id="statusStrVal">10</span></div>
+                  <div class="pm-btn plus" data-stat-btn="strength" data-dir="1">+</div>
+                </div>
+                <div class="stat-pill" data-stat="luck">
+                  <div class="pm-btn minus" data-stat-btn="luck" data-dir="-1">−</div>
+                  <div class="stat-mid"><span class="lbl">LCK</span><span class="val" id="statusLckVal">10</span></div>
+                  <div class="pm-btn plus" data-stat-btn="luck" data-dir="1">+</div>
+                </div>
               </div>
               <div class="char-preview-box" id="openCharEditorBtn">
-                <canvas id="statusCharCanvas" width="64" height="64" style="width:150px; height:150px;"></canvas>
+                <canvas id="statusCharCanvas" width="64" height="64" style="width:190px; height:190px;"></canvas>
               </div>
             </div>
-            <div class="btn gold full" id="editCharacterBtn">🧍 EDIT CHARACTER</div>
 
-            <div class="btn outline full" id="logoutBtn">⎋ LOG OUT</div>
-            <div class="btn gold full" id="notifyBtn" style="margin-top:6px;">🔔 ENABLE NOTIFICATIONS</div>
+            <div style="display:flex; gap:8px;">
+              <div class="btn cancel-btn" style="flex:1;" id="cancelStatsBtn">CANCEL CHANGES</div>
+              <div class="btn save-btn" style="flex:1;" id="saveStatsBtn">SAVE CHANGES</div>
+            </div>
+
+            <div class="btn signal-btn full" id="editCharacterBtn">EDIT CHARACTER</div>
+            <div class="btn gold full" id="notifyBtn" style="margin-top:6px;">ENABLE NOTIFICATIONS</div>
+            <div class="btn outline full" id="logoutBtn" style="margin-top:6px;">LOG OUT</div>
             <div class="hint" id="saveStatusHint">Progress saves automatically.</div>
           </div>
         </div>
@@ -568,10 +619,10 @@
       </div>
 
       <div class="navbar">
-        <div class="navitem active" data-view="shelter"><span class="ic">🏚️</span>SHELTER</div>
-        <div class="navitem" data-view="mission"><span class="ic">🗺️</span>MISSION</div>
-        <div class="navitem" data-view="inventory"><span class="ic">🎒</span>ITEMS</div>
-        <div class="navitem" data-view="status"><span class="ic">👤</span>STATUS</div>
+        <div class="navitem active" data-view="shelter"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5L12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg></span>SHELTER</div>
+        <div class="navitem" data-view="mission"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 4 15 6 21 4 21 18 15 20 9 18 3 20 3 6"/><line x1="9" y1="4" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="20"/></svg></span>MISSION</div>
+        <div class="navitem" data-view="inventory"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V8Z"/><path d="M9 3h6v4H9z"/><line x1="8" y1="13" x2="16" y2="13"/></svg></span>ITEMS</div>
+        <div class="navitem" data-view="status"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg></span>STATUS</div>
       </div>
 
       <!-- AUTH OVERLAY -->
@@ -688,7 +739,8 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
   };
 
   const DEFAULT_STATE = {
-    day: 1, level: 1, xp: 0, hp: 100, energy: 100, strength: 10, luck: 10, radio_progress: 0,
+    day: 1, level: 1, xp: 0, hp: 10, energy: 10, strength: 10, luck: 10, radio_progress: 0,
+    available_points: 0,
     appearance: DEFAULT_APPEARANCE,
     inventory: {
       food: [
@@ -925,6 +977,74 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       renderAppearance(statusCanvas, playerState.appearance, 3);
     }
   }
+
+  // =========================================================
+  // STAT POINT ALLOCATION
+  // =========================================================
+  const STAT_KEYS = ['hp', 'energy', 'strength', 'luck'];
+  const STAT_VAL_ID = { hp:'statusHpVal', energy:'statusEnrVal', strength:'statusStrVal', luck:'statusLckVal' };
+
+  let pendingStats = { hp:0, energy:0, strength:0, luck:0 };
+
+  function resetStatEditor(){
+    if(!playerState) return;
+    STAT_KEYS.forEach(k => { pendingStats[k] = playerState[k]; });
+    renderStatEditor();
+  }
+
+  function pointsUsed(){
+    if(!playerState) return 0;
+    return STAT_KEYS.reduce((sum,k) => sum + Math.max(0, pendingStats[k] - playerState[k]), 0);
+  }
+
+  function renderStatEditor(){
+    if(!playerState) return;
+    const used = pointsUsed();
+    const remaining = (playerState.available_points || 0) - used;
+    document.getElementById('availablePointsVal').textContent = String(remaining).padStart(2,'0');
+
+    STAT_KEYS.forEach(k => {
+      const val = pendingStats[k];
+      const isDirty = val !== playerState[k];
+      document.getElementById(STAT_VAL_ID[k]).textContent = val;
+      document.querySelector('.stat-pill[data-stat="'+k+'"]').classList.toggle('dirty', isDirty);
+
+      const plusBtn = document.querySelector('.pm-btn.plus[data-stat-btn="'+k+'"]');
+      const minusBtn = document.querySelector('.pm-btn.minus[data-stat-btn="'+k+'"]');
+      plusBtn.classList.toggle('disabled', remaining <= 0);
+      minusBtn.classList.toggle('disabled', val <= playerState[k]);
+    });
+  }
+
+  document.querySelectorAll('.pm-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if(btn.classList.contains('disabled')) return;
+      const stat = btn.dataset.statBtn;
+      const dir = parseInt(btn.dataset.dir, 10);
+      if(dir > 0){
+        const used = pointsUsed();
+        if((playerState.available_points || 0) - used <= 0) return;
+        pendingStats[stat] += 1;
+      } else {
+        if(pendingStats[stat] <= playerState[stat]) return;
+        pendingStats[stat] -= 1;
+      }
+      renderStatEditor();
+    });
+  });
+
+  document.getElementById('cancelStatsBtn').addEventListener('click', () => {
+    resetStatEditor();
+  });
+
+  document.getElementById('saveStatsBtn').addEventListener('click', () => {
+    const used = pointsUsed();
+    if(used <= 0) return;
+    STAT_KEYS.forEach(k => { playerState[k] = pendingStats[k]; });
+    playerState.available_points = (playerState.available_points || 0) - used;
+    queueSave();
+    applyStateToUI();
+  });
 
   document.getElementById('rotateLeft').addEventListener('click', () => {
     editorDirection = (editorDirection + 3) % 4;
@@ -1296,6 +1416,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     playerState.strength = playerState.strength ?? 10;
     playerState.luck = playerState.luck ?? 10;
     playerState.radio_progress = playerState.radio_progress ?? 0;
+    playerState.available_points = playerState.available_points ?? 0;
     playerState.inventory = playerState.inventory || DEFAULT_STATE.inventory;
     playerState.notify_at = playerState.notify_at ?? null;
     playerState.notified = playerState.notified ?? true;
@@ -1319,10 +1440,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     inventoryData = playerState.inventory || DEFAULT_STATE.inventory;
     updateTopBar();
     document.getElementById('accountPlayerId').textContent = playerState.player_id || '—';
-    document.getElementById('statusHpVal').textContent = playerState.hp;
-    document.getElementById('statusEnrVal').textContent = playerState.energy;
-    document.getElementById('statusStrVal').textContent = playerState.strength;
-    document.getElementById('statusLckVal').textContent = playerState.luck;
+    resetStatEditor();
     drawStatusPreview();
     const activeTab = document.querySelector('.inv-tab.active')?.dataset.tab || 'food';
     renderInventory(activeTab);
@@ -1364,6 +1482,10 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     playerState.xp = (playerState.xp || 0) + amount;
     const newLevel = levelFromXp(playerState.xp);
     const leveledUp = newLevel > playerState.level;
+    if(leveledUp){
+      const levelsGained = newLevel - playerState.level;
+      playerState.available_points = (playerState.available_points || 0) + (levelsGained * 2);
+    }
     playerState.level = newLevel;
     updateTopBar();
     return { leveledUp, newLevel };
@@ -1388,6 +1510,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         strength: playerState.strength,
         luck: playerState.luck,
         radio_progress: playerState.radio_progress,
+        available_points: playerState.available_points,
         inventory: playerState.inventory,
         active_mission: playerState.active_mission,
         notify_at: playerState.notify_at,
@@ -1489,7 +1612,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       }
 
       showToast('NOTIFICATIONS ENABLED');
-      document.getElementById('notifyBtn').textContent = '🔔 NOTIFICATIONS ON';
+      document.getElementById('notifyBtn').textContent = 'NOTIFICATIONS ON';
     } catch(err){
       showToast('SUBSCRIBE ERROR — ' + err.message);
     }
@@ -1499,7 +1622,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     if(!('serviceWorker' in navigator) || !swRegistration) return;
     const subscription = await swRegistration.pushManager.getSubscription();
     if(subscription){
-      document.getElementById('notifyBtn').textContent = '🔔 NOTIFICATIONS ON';
+      document.getElementById('notifyBtn').textContent = 'NOTIFICATIONS ON';
     }
   }
 
