@@ -313,10 +313,12 @@
   .stat-pill.dirty .stat-mid .val{ color: var(--signal); text-shadow:0 0 6px rgba(78,230,168,0.6); }
   .pm-btn{
     width:30px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
-    font-family:'Press Start 2P'; font-size:18px; font-weight:bold; color:var(--signal);
-    background:#161a1f; cursor:pointer; user-select:none;
+    font-family:'Press Start 2P'; font-size:18px; font-weight:bold; color:#000;
+    text-shadow: 0.6px 0 0 #000, -0.6px 0 0 #000, 0 0.6px 0 #000, 0 -0.6px 0 #000;
+    background: linear-gradient(160deg,#8a8d94,#5a5d63);
+    cursor:pointer; user-select:none;
   }
-  .pm-btn.minus{ border-right:2px solid #000; color:#ff8080; }
+  .pm-btn.minus{ border-right:2px solid #000; }
   .pm-btn.plus{ border-left:2px solid #000; }
   .pm-btn.disabled{ opacity:0.25; cursor:not-allowed; }
   .points-box{
