@@ -391,6 +391,40 @@
   .fragment-card.locked{ opacity:0.5; }
   .fragment-card.locked .ftext{ color:var(--ash); font-style:normal; }
   .fragment-card.locked .flabel{ color:var(--ash); }
+
+  .faction-card{
+    border:2px solid #000; box-shadow: 3px 3px 0 #000, 0 0 0 6px rgba(0,0,0,0.15); padding:14px 14px 12px;
+    background: linear-gradient(155deg, #d9cca4 0%, #c7b98c 60%, #b8a878 100%);
+    position:relative;
+  }
+  .faction-card::before{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:
+      repeating-linear-gradient(0deg, rgba(90,70,30,0.05) 0px, transparent 1px, transparent 3px),
+      radial-gradient(ellipse at 15% 90%, rgba(80,60,20,0.18), transparent 60%),
+      radial-gradient(ellipse at 90% 10%, rgba(80,60,20,0.15), transparent 55%);
+  }
+  .faction-entry-date{
+    font-family:'Press Start 2P'; font-size:7px; color:#5a4a2a;
+    border-bottom:1px dashed #8a7850; padding-bottom:7px; margin-bottom:9px;
+    display:flex; justify-content:space-between; position:relative;
+  }
+  .faction-head{ display:flex; align-items:center; gap:10px; margin-bottom:8px; position:relative; }
+  .faction-head .emblem{ font-size:26px; flex-shrink:0; filter:sepia(0.3); }
+  .faction-head .fname{ font-family:'Press Start 2P'; font-size:9px; color:#2a2010; margin-bottom:4px; }
+  .faction-head .fleader{ font-size:14px; color:#4a3c22; font-style:italic; }
+  .faction-desc{
+    font-size:16px; color:#2a2010; line-height:1.45; margin-bottom:10px; position:relative;
+  }
+  .faction-rep-row{ display:flex; align-items:center; gap:8px; margin-bottom:8px; position:relative; }
+  .faction-rep-label{ font-family:'Press Start 2P'; font-size:6px; color:#5a4a2a; flex-shrink:0; width:52px; }
+  .faction-rep-bar{ flex:1; height:11px; background:#3a2f1a; border:1px solid #000; box-shadow: inset 0 0 0 1px #2a2010; position:relative; overflow:hidden; }
+  .faction-rep-fill{ height:100%; }
+  .faction-card.beacon .faction-rep-fill{ background: linear-gradient(90deg,#8a6a10,#d4a92f); }
+  .faction-card.roots .faction-rep-fill{ background: linear-gradient(90deg,#2a5424,#6aa848); }
+  .faction-card.faceless .faction-rep-fill{ background: linear-gradient(90deg,#6a2424,#a84040); }
+  .faction-rep-num{ font-size:12px; color:#5a4a2a; width:30px; text-align:right; flex-shrink:0; }
+  .faction-hint{ font-size:13px; color:#5a4a2a; font-style:italic; border-top:1px dashed #8a7850; padding-top:8px; position:relative; }
   .mission-list-card:active{ transform:translate(1px,1px); }
   .mission-list-card .head{ display:flex; justify-content:space-between; align-items:center; }
   .mission-list-card .name{ font-family:'Press Start 2P'; font-size:8px; color:var(--bone); text-shadow:1px 1px 0 #000; }
@@ -781,6 +815,20 @@
 
           <div class="section-lbl" style="margin-top:4px;">SIGNAL LOG</div>
           <div id="fragmentList" style="display:flex; flex-direction:column; gap:9px; padding-bottom:14px;"></div>
+        </div>
+      </div>
+
+      <!-- MAP / FACTIONS OVERLAY -->
+      <div class="screen" id="mapScreen" style="position:absolute; inset:0; z-index:18; display:none;">
+        <div class="statusbar">
+          <span class="back" id="mapBack">‹ BACK</span>
+          <span class="title">SURVIVOR'S JOURNAL</span>
+          <span style="width:40px;"></span>
+        </div>
+
+        <div class="content">
+          <div class="hint" style="margin-top:-2px;">Notes I've kept on the groups still holding on out there.</div>
+          <div id="factionList" style="display:flex; flex-direction:column; gap:11px; padding-bottom:14px;"></div>
         </div>
       </div>
     </div>
@@ -1491,6 +1539,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     playerState.radio_progress = playerState.radio_progress ?? 0;
     playerState.available_points = playerState.available_points ?? 0;
     playerState.recipes_unlocked = playerState.recipes_unlocked || { vitality:false, strength:false, energy:false, luck:false };
+    playerState.faction_reputation = playerState.faction_reputation || { beacon:50, roots:50, faceless:50 };
     playerState.inventory = playerState.inventory || DEFAULT_STATE.inventory;
     playerState.notify_at = playerState.notify_at ?? null;
     playerState.notified = playerState.notified ?? true;
@@ -1587,6 +1636,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         radio_progress: playerState.radio_progress,
         available_points: playerState.available_points,
         recipes_unlocked: playerState.recipes_unlocked,
+        faction_reputation: playerState.faction_reputation,
         inventory: playerState.inventory,
         active_mission: playerState.active_mission,
         notify_at: playerState.notify_at,
@@ -1736,6 +1786,10 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         showToast('LOCKED — REACH LEVEL 20 TO UNLOCK');
         return;
       }
+      if(room.dataset.room === 'Door'){
+        openMapScreen();
+        return;
+      }
       showToast(room.dataset.room.toUpperCase() + ' ROOM SELECTED');
     });
   });
@@ -1797,6 +1851,63 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
   });
 
   document.getElementById('radioBack').addEventListener('click', closeRadioScreen);
+
+  // =========================================================
+  // MAP / FACTIONS
+  // =========================================================
+  const FACTIONS = [
+    {
+      id:'beacon', name:'THE BEACON', leader:'Renato "Engenheiro" Alves', emblem:'💡', cls:'beacon', entryDay:9,
+      desc:"\"Silence isn't safety,\" he told me. \"Silence is surrender.\" He used to run city infrastructure, before. Now he wants the lights back no matter what it draws in. I get it. I don't trust it.",
+      hint:"If they trust me more, maybe they'll share what they know about fixing things.",
+    },
+    {
+      id:'roots', name:'THE ROOTS', leader:'Dona Iracema', emblem:'🌱', cls:'roots', entryDay:14,
+      desc:"They grow their own food out past the ridge. No radios, no chargers — she said she watched people claw each other over batteries while the crops went to waste. She doesn't trust anything with a battery in it. Including me, probably.",
+      hint:"If they trust me more, maybe they'll show me safer paths through the ash.",
+    },
+    {
+      id:'faceless', name:'THE FACELESS', leader:'Mask Zero', emblem:'🎭', cls:'faceless', entryDay:18,
+      desc:"No one's seen a real face in that group in months. Just the masks. They took what wasn't theirs from the Depot, and I don't know if I believe the story about why. Still don't know what to make of them.",
+      hint:"I still don't know what they really want. Better to be careful.",
+    },
+  ];
+
+  function openMapScreen(){
+    renderFactionList();
+    document.getElementById('mapScreen').style.display = 'flex';
+  }
+  function closeMapScreen(){
+    document.getElementById('mapScreen').style.display = 'none';
+  }
+  document.getElementById('mapBack').addEventListener('click', closeMapScreen);
+
+  function renderFactionList(){
+    const list = document.getElementById('factionList');
+    if(!list || !playerState) return;
+    const rep = playerState.faction_reputation || { beacon:50, roots:50, faceless:50 };
+    list.innerHTML = '';
+
+    FACTIONS.forEach(f => {
+      const value = rep[f.id] ?? 50;
+      const card = document.createElement('div');
+      card.className = 'faction-card ' + f.cls;
+      card.innerHTML =
+        '<div class="faction-entry-date"><span>DAY ' + String(f.entryDay).padStart(3,'0') + '</span><span>PERSONAL LOG</span></div>' +
+        '<div class="faction-head">' +
+          '<span class="emblem">' + f.emblem + '</span>' +
+          '<div><div class="fname">' + f.name + '</div><div class="fleader">Led by ' + f.leader + '</div></div>' +
+        '</div>' +
+        '<div class="faction-desc">' + f.desc + '</div>' +
+        '<div class="faction-rep-row">' +
+          '<span class="faction-rep-label">STANDING</span>' +
+          '<div class="faction-rep-bar"><div class="faction-rep-fill" style="width:' + value + '%"></div></div>' +
+          '<span class="faction-rep-num">' + value + '</span>' +
+        '</div>' +
+        '<div class="faction-hint">' + f.hint + '</div>';
+      list.appendChild(card);
+    });
+  }
 
   document.getElementById('repairRadioBtn').addEventListener('click', () => {
     if(!playerState) return;
