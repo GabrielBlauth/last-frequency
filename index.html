@@ -224,9 +224,17 @@
     image-rendering: auto; margin-bottom:9px; display:block;
     filter: saturate(0.9) contrast(1.05);
   }
-  .timer-block{ background: radial-gradient(circle at 50% 30%, rgba(255,106,61,0.15), #000 75%); border:2px solid var(--ember); box-shadow: 0 0 16px rgba(255,106,61,0.35), inset 0 0 12px rgba(255,106,61,0.15); padding:11px; text-align:center; margin-bottom:9px;}
-  .timer-block .time{font-family:'Press Start 2P'; font-size:32px; color:var(--ember-hot); text-shadow:2px 2px 0 #3a1005, 0 0 14px rgba(255,184,77,0.6);}
-  .timer-block .lbl{font-size:13px; color:var(--ash); margin-top:5px; letter-spacing:1px;}
+  .timer-block{ background: radial-gradient(circle at 50% 30%, rgba(255,106,61,0.15), #000 75%); border:2px solid var(--ember); box-shadow: 0 0 16px rgba(255,106,61,0.35), inset 0 0 12px rgba(255,106,61,0.15); padding:9px; text-align:center; margin-bottom:9px;}
+  .timer-block .time{font-family:'Press Start 2P'; font-size:20px; color:var(--ember-hot); text-shadow:2px 2px 0 #3a1005, 0 0 14px rgba(255,184,77,0.6);}
+  .timer-block .lbl{font-size:12px; color:var(--ash); margin-top:4px; letter-spacing:1px;}
+  .narrative-box{
+    background:#0a0b0d; border:2px solid #000; box-shadow: inset 0 0 0 1px #2a2c34;
+    padding:11px 12px; margin-top:9px; min-height:64px;
+    font-family:'VT323', monospace; font-size:18px; color:#8ef0a8;
+    line-height:1.4; text-shadow:0 0 4px rgba(142,240,168,0.4);
+  }
+  .narrative-cursor{ animation: blinkCursor 0.8s steps(1) infinite; color:#8ef0a8; }
+  @keyframes blinkCursor{ 50%{ opacity:0; } }
   .progress-bg{background:#000; border:2px solid #000; height:16px; margin-bottom:9px; position:relative; box-shadow: inset 0 0 0 1px #2a2a2a;}
   .progress-fill{ background: repeating-linear-gradient(45deg, var(--signal) 0 8px, var(--signal-dark) 8px 16px); background-size: 32px 32px; height:100%; width:0%; animation: stripes 1s linear infinite; box-shadow: 0 0 10px rgba(78,230,168,0.5); transition: width 0.3s linear;}
   .risk-alert{ border:2px dashed var(--blood); padding:7px 9px; font-size:14px; color:#ffb3b3; display:flex; align-items:center; gap:7px; animation: pulse-danger 1.1s infinite; text-shadow:0 0 6px rgba(232,59,59,0.6); display:none;}
@@ -340,6 +348,20 @@
   .char-preview-box canvas{ image-rendering:pixelated; }
 
   /* ---- Mission list ---- */
+  .zone-header{
+    display:flex; align-items:center; gap:9px; cursor:pointer;
+    background: linear-gradient(160deg,#1c1e26,#111217); border:2px solid #000;
+    box-shadow: 3px 3px 0 #000, inset 0 0 0 1px #2c2e37;
+    padding:11px 12px;
+  }
+  .zone-header.expanded{ background: linear-gradient(160deg,var(--ember-dark),#3a0f06); box-shadow: 3px 3px 0 #000, inset 0 0 8px rgba(255,106,61,0.25); }
+  .zone-emblem{ font-size:20px; }
+  .zone-name{ font-family:'Press Start 2P'; font-size:9px; color:var(--bone); text-shadow:1px 1px 0 #000; flex:1; }
+  .zone-count{ font-size:12px; color:var(--ash); }
+  .zone-arrow{ font-size:14px; color:var(--ash); transition:transform 0.15s; }
+  .zone-header.expanded .zone-arrow{ transform:rotate(90deg); color:var(--ember-hot); }
+  .zone-body{ display:flex; flex-direction:column; gap:9px; margin-top:9px; padding-left:6px; }
+
   .mission-list-card{
     background: linear-gradient(160deg,#1c1e26,#131418); border:2px solid #000;
     box-shadow: 3px 3px 0 #000, inset 0 0 0 1px #2c2e37;
@@ -453,6 +475,8 @@
     font-family:'Kalam', cursive; font-weight:400; font-size:18px; color:#232017;
     line-height:1.55;
   }
+  .notebook-page.locked-page{ opacity:0.55; }
+  .notebook-page.locked-page .notebook-subject{ text-decoration:none; color:#5a5442; }
 
   .journal-desk{
     background:
@@ -674,8 +698,8 @@
 
           <!-- Mission list (shown when no mission is active) -->
           <div id="missionListView">
-            <div class="section-lbl">AVAILABLE MISSIONS</div>
-            <div id="missionList" style="display:flex; flex-direction:column; gap:9px; margin-top:9px;"></div>
+            <div class="section-lbl">MISSIONS</div>
+            <div id="zoneAccordion" style="display:flex; flex-direction:column; gap:9px; margin-top:9px;"></div>
           </div>
 
           <!-- Active mission (shown while a mission is running) -->
@@ -694,6 +718,8 @@
               </div>
 
               <div class="progress-bg"><div class="progress-fill" id="progressFill"></div></div>
+
+              <div class="narrative-box" id="narrativeBox"><span id="narrativeText"></span><span class="narrative-cursor">▌</span></div>
 
               <div class="risk-alert" id="riskAlert">⚠ CRACKED ASHEN DETECTED NEARBY</div>
             </div>
@@ -797,19 +823,19 @@
           <div class="section-lbl">JOURNAL</div>
           <div style="display:flex; flex-direction:column; gap:9px;">
             <div class="mission-list-card journal-cat-card" data-journal-cat="personal">
-              <div class="head"><span class="name">PERSONAL LOG</span></div>
+              <div class="head"><span class="name">PERSONAL LOG</span><span class="lvl" id="countPersonal">0/10</span></div>
               <div class="desc">Your own notes since day one.</div>
             </div>
             <div class="mission-list-card journal-cat-card" data-journal-cat="beacon">
-              <div class="head"><span class="name">THE BEACON</span></div>
+              <div class="head"><span class="name">THE BEACON</span><span class="lvl" id="countBeacon">0/10</span></div>
               <div class="desc">Notes on Marcus and his people.</div>
             </div>
             <div class="mission-list-card journal-cat-card" data-journal-cat="roots">
-              <div class="head"><span class="name">THE ROOTS</span></div>
+              <div class="head"><span class="name">THE ROOTS</span><span class="lvl" id="countRoots">0/10</span></div>
               <div class="desc">Notes on Eleanor and her people.</div>
             </div>
             <div class="mission-list-card journal-cat-card" data-journal-cat="faceless">
-              <div class="head"><span class="name">THE FACELESS</span></div>
+              <div class="head"><span class="name">THE FACELESS</span><span class="lvl" id="countFaceless">0/10</span></div>
               <div class="desc">Notes on the masked ones.</div>
             </div>
           </div>
@@ -1732,6 +1758,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     document.getElementById('accountPlayerId').textContent = playerState.player_id || '—';
     resetStatEditor();
     drawStatusPreview();
+    renderJournalCounts();
     const activeTab = document.querySelector('.inv-tab.active')?.dataset.tab || 'food';
     renderInventory(activeTab);
     renderKitchen();
@@ -2160,19 +2187,43 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     },
   };
 
+  function unlockedCount(cat){
+    const day = playerState ? playerState.day : 1;
+    return cat.entries.filter(e => e.day <= day).length;
+  }
+
+  function renderJournalCounts(){
+    if(!playerState) return;
+    const ids = { personal:'countPersonal', beacon:'countBeacon', roots:'countRoots', faceless:'countFaceless' };
+    Object.entries(ids).forEach(([catId, elId]) => {
+      const cat = JOURNAL_DATA[catId];
+      const el = document.getElementById(elId);
+      if(cat && el) el.textContent = unlockedCount(cat) + '/' + cat.entries.length;
+    });
+  }
+
   function openJournalCategory(catId){
     const cat = JOURNAL_DATA[catId];
     if(!cat) return;
     document.getElementById('journalCategoryTitle').textContent = cat.title;
     const list = document.getElementById('journalEntryList');
     list.innerHTML = '';
+    const currentDay = playerState ? playerState.day : 1;
     cat.entries.forEach(e => {
       const page = document.createElement('div');
-      page.className = 'notebook-page';
-      page.innerHTML =
-        '<div class="notebook-day">DAY ' + String(e.day).padStart(3,'0') + '</div>' +
-        '<div class="notebook-subject">' + e.subject + '</div>' +
-        '<div class="notebook-text">' + e.text + '</div>';
+      const locked = e.day > currentDay;
+      page.className = 'notebook-page' + (locked ? ' locked-page' : '');
+      if(locked){
+        page.innerHTML =
+          '<div class="notebook-day">DAY ' + String(e.day).padStart(3,'0') + '</div>' +
+          '<div class="notebook-subject">???</div>' +
+          '<div class="notebook-text">This page hasn\'t been written yet.</div>';
+      } else {
+        page.innerHTML =
+          '<div class="notebook-day">DAY ' + String(e.day).padStart(3,'0') + '</div>' +
+          '<div class="notebook-subject">' + e.subject + '</div>' +
+          '<div class="notebook-text">' + e.text + '</div>';
+      }
       list.appendChild(page);
     });
     document.getElementById('journalCategoryScreen').style.display = 'flex';
@@ -2221,77 +2272,400 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
   // ---------- Missions ----------
   // NOTE: duration_seconds is short here so you can actually test it.
   // In the real game these would be hours (e.g. 3 * 3600), same logic applies unchanged.
+  const ZONES = [
+    { id:'shelter', name:'SHELTER', emblem:'🏚️' },
+    { id:'roots', name:'THE ROOTS', emblem:'🌱' },
+    { id:'faceless', name:'THE FACELESS', emblem:'🎭' },
+    { id:'beacon', name:'THE BEACON', emblem:'💡' },
+    { id:'radio', name:'RADIO TOWER', emblem:'📡' },
+  ];
+
+  const BOTTLE_SVG = '<svg width="30" height="30" viewBox="0 0 24 24" style="display:block;"><rect x="9" y="1" width="6" height="2" fill="#9fe0ff"/><rect x="8" y="3" width="8" height="3" fill="#5ab8e8"/><path d="M7 6h10v3l1 2v11a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V11l1-2V6z" fill="#3a92c9" stroke="#0d3a52" stroke-width="1"/><rect x="6.5" y="13" width="11" height="7" fill="#7dd0f5"/><rect x="6.5" y="13" width="11" height="1.5" fill="#0d3a52"/></svg>';
+
   const MISSIONS = [
+    // ---------------- SHELTER (neighborhood, LV 1-15) ----------------
     {
-      id: 'farmhouse', name: 'QUIET FARMHOUSE', level: 1, duration_seconds: 20, xp: 20,
+      id: 'farmhouse', zone:'shelter', name: 'QUIET FARMHOUSE', level: 1, duration_seconds: 20, xp: 20,
       desc: 'Check a quiet farmhouse near the edge of town for supplies.',
       image: 'mission_farmhouse.jpg',
+      narrative: [
+        "The gate's unlocked. That's either good luck or bad news.",
+        "Kitchen's mostly picked over, but the pantry door was stuck shut for a reason.",
+        "Grabbing what's left before the light changes.",
+      ],
       loot: [ {icon:'🥫', qty:2, name:'CANNED FOOD', rarity:'COMMON', cat:'food'},
-              {icon:'<svg width="30" height="30" viewBox="0 0 24 24" style="display:block;"><rect x="9" y="1" width="6" height="2" fill="#9fe0ff"/><rect x="8" y="3" width="8" height="3" fill="#5ab8e8"/><path d="M7 6h10v3l1 2v11a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V11l1-2V6z" fill="#3a92c9" stroke="#0d3a52" stroke-width="1"/><rect x="6.5" y="13" width="11" height="7" fill="#7dd0f5"/><rect x="6.5" y="13" width="11" height="1.5" fill="#0d3a52"/></svg>', qty:1, name:'BOTTLED WATER', rarity:'COMMON', cat:'food'} ],
+              {icon:BOTTLE_SVG, qty:1, name:'BOTTLED WATER', rarity:'COMMON', cat:'food'} ],
     },
     {
-      id: 'pharmacy', name: 'RUINED PHARMACY', level: 5, duration_seconds: 30, xp: 35,
+      id: 'market', zone:'shelter', name: 'ABANDONED MARKET', level: 3, duration_seconds: 25, xp: 28,
+      desc: "Search a looted corner market for whatever's left on the shelves.",
+      image: 'mission_farmhouse.jpg',
+      narrative: [
+        "Front windows are long gone. Shelves mostly bare, but mostly isn't all.",
+        "Someone already ransacked the registers. Checking the back stockroom instead.",
+        "Found a few unopened cases behind a fallen shelf. Small win.",
+      ],
+      loot: [ {icon:'🥫', qty:2, name:'CANNED FOOD', rarity:'COMMON', cat:'food'},
+              {icon:'🩹', qty:1, name:'BANDAGE', rarity:'COMMON', cat:'medical'} ],
+    },
+    {
+      id: 'pharmacy', zone:'shelter', name: 'RUINED PHARMACY', level: 5, duration_seconds: 30, xp: 35,
       desc: 'Pick through a looted pharmacy for anything still sealed.',
       image: 'mission_pharmacy.jpg',
+      narrative: [
+        "Glass everywhere. Moving slow so I don't announce myself.",
+        "Most bottles are empty or expired years ago. Still checking every one.",
+        "Sealed box behind the counter. Worth the risk of the noise.",
+      ],
       loot: [ {icon:'🩹', qty:2, name:'BANDAGE', rarity:'COMMON', cat:'medical'},
               {icon:'💊', qty:1, name:'ANTIBIOTIC', rarity:'UNCOMMON', cat:'medical'} ],
     },
     {
-      id: 'garage', name: 'ABANDONED GARAGE', level: 10, duration_seconds: 35, xp: 45,
+      id: 'garage', zone:'shelter', name: 'ABANDONED GARAGE', level: 10, duration_seconds: 35, xp: 45,
       desc: 'Search a wrecked motorcycle workshop for usable parts.',
       image: 'mission_garage.jpg',
+      narrative: [
+        "Oil stains everywhere. Someone worked here right up until they didn't.",
+        "Toolbox is jammed. Prying it open as quietly as I can manage.",
+        "Something electronic buried under the workbench. Worth a look.",
+      ],
       loot: [ {icon:'⚙️', qty:1, name:'MOTOR PART', rarity:'UNCOMMON', cat:'parts'},
               {icon:'🔧', qty:2, name:'TOOL KIT', rarity:'COMMON', cat:'parts'},
               {icon:'📟', qty:1, name:'RADIO CHIP', rarity:'★ RARE — REPAIRS THE FAMILY RADIO', cat:'parts', rare:true} ],
     },
     {
-      id: 'depot', name: 'MILITARY DEPOT', level: 15, duration_seconds: 45, xp: 60,
+      id: 'depot', zone:'shelter', name: 'MILITARY DEPOT', level: 15, duration_seconds: 45, xp: 60,
       desc: 'Raid an abandoned outpost for rations and medical supplies.',
       image: 'mission_depot.jpg',
+      narrative: [
+        "Fence is cut, not climbed. Someone else has been here recently.",
+        "Crates stacked floor to ceiling. Reading labels by flashlight.",
+        "Found the medical crate. Getting out before anyone notices the light.",
+      ],
       loot: [ {icon:'🍖', qty:1, name:'MILITARY RATION', rarity:'UNCOMMON', cat:'food'},
               {icon:'💊', qty:1, name:'ANTIBIOTIC', rarity:'UNCOMMON', cat:'medical'},
               {icon:'☕', qty:1, name:'COFFEE', rarity:'★ RARE — ENERGY BOOST', cat:'food', rare:true},
               {icon:'📟', qty:1, name:'RADIO CHIP', rarity:'★ RARE — REPAIRS THE FAMILY RADIO', cat:'parts', rare:true} ],
     },
+
+    // ---------------- THE ROOTS (hills/farmland, LV 16-28) ----------------
+    {
+      id: 'greenhouse', zone:'roots', name: 'OVERGROWN GREENHOUSE', level: 16, duration_seconds: 50, xp: 70,
+      desc: "Slip into the Roots' outer greenhouse for seeds and herbs before anyone notices.",
+      image: 'mission_farmhouse.jpg',
+      narrative: [
+        "Glass panels fogged over. Can barely see past my own hand in here.",
+        "Rows of plants nobody's tended in weeks. Taking what's still good.",
+        "A dog barked somewhere close. Moving faster now.",
+      ],
+      loot: [ {icon:'🌿', qty:2, name:'HERBAL REMEDY', rarity:'UNCOMMON', cat:'medical'},
+              {icon:'🥫', qty:1, name:'CANNED FOOD', rarity:'COMMON', cat:'food'} ],
+    },
+    {
+      id: 'windmill', zone:'roots', name: 'THE OLD WINDMILL', level: 19, duration_seconds: 55, xp: 80,
+      desc: 'Climb the stalled windmill on the ridge for parts and a better vantage point.',
+      image: 'mission_garage.jpg',
+      narrative: [
+        "Ladder's rusted through in places. Testing every rung before trusting it.",
+        "Gears seized solid, but some of the housing is still salvageable.",
+        "From up here I can see the whole valley. Worth the climb down carefully.",
+      ],
+      loot: [ {icon:'⚙️', qty:1, name:'MOTOR PART', rarity:'UNCOMMON', cat:'parts'},
+              {icon:'🔧', qty:1, name:'TOOL KIT', rarity:'COMMON', cat:'parts'} ],
+    },
+    {
+      id: 'barn', zone:'roots', name: 'FLOODED BARN', level: 22, duration_seconds: 60, xp: 90,
+      desc: 'Wade through a half-flooded barn where something has been nesting.',
+      image: 'mission_depot.jpg',
+      narrative: [
+        "Water's up past my ankles. Whatever's in here, it likes the dark.",
+        "Feed sacks are ruined, but the loft above stayed dry.",
+        "Something shifted in the corner. Not sticking around to find out what.",
+      ],
+      loot: [ {icon:'🥫', qty:2, name:'CANNED FOOD', rarity:'COMMON', cat:'food'},
+              {icon:'🌿', qty:1, name:'HERBAL REMEDY', rarity:'UNCOMMON', cat:'medical'} ],
+    },
+    {
+      id: 'terraces', zone:'roots', name: 'TERRACE FIELDS AT DUSK', level: 25, duration_seconds: 65, xp: 100,
+      desc: 'Gather what the terraced fields still have to offer before the Ashen come out.',
+      image: 'mission_farmhouse.jpg',
+      narrative: [
+        "Sun's going down fast. This was supposed to be a daylight trip.",
+        "Rows of vegetables nobody's harvested. Filling every pocket I have.",
+        "Movement at the tree line. Time to head back down the hill.",
+      ],
+      loot: [ {icon:'🥫', qty:2, name:'CANNED FOOD', rarity:'COMMON', cat:'food'},
+              {icon:'☕', qty:1, name:'COFFEE', rarity:'★ RARE — ENERGY BOOST', cat:'food', rare:true} ],
+    },
+    {
+      id: 'cellar', zone:'roots', name: "ELEANOR'S CELLAR", level: 28, duration_seconds: 70, xp: 110,
+      desc: "Eleanor's people trust you enough to ask for help clearing their root cellar.",
+      image: 'mission_pharmacy.jpg',
+      narrative: [
+        "She handed me the key herself. Didn't expect that.",
+        "Shelves of preserves down here, untouched in who knows how long.",
+        "This is the kind of trust that isn't easy to earn back if I waste it.",
+      ],
+      loot: [ {icon:'🌿', qty:2, name:'HERBAL REMEDY', rarity:'UNCOMMON', cat:'medical'},
+              {icon:'🥫', qty:2, name:'CANNED FOOD', rarity:'COMMON', cat:'food'} ],
+    },
+
+    // ---------------- THE FACELESS (urban ruins, LV 17-30) ----------------
+    {
+      id: 'storefront', zone:'faceless', name: 'COLLAPSED STOREFRONT', level: 17, duration_seconds: 50, xp: 75,
+      desc: 'Slip through a caved-in storefront on the edge of Faceless territory.',
+      image: 'mission_garage.jpg',
+      narrative: [
+        "Half the ceiling is on the floor already. Staying near the edges.",
+        "Whoever looted this place first left the heavy stuff behind.",
+        "Heard footsteps two aisles over. Holding still until they pass.",
+      ],
+      loot: [ {icon:'🔩', qty:1, name:'SCRAP METAL', rarity:'COMMON', cat:'parts'},
+              {icon:'🩹', qty:1, name:'BANDAGE', rarity:'COMMON', cat:'medical'} ],
+    },
+    {
+      id: 'silentblock', zone:'faceless', name: 'THE SILENT BLOCK', level: 20, duration_seconds: 55, xp: 85,
+      desc: 'Cross a block that has gone strangely quiet, even for this part of the city.',
+      image: 'mission_depot.jpg',
+      narrative: [
+        "No birds, no wind through the broken windows. Too quiet.",
+        "A mask painted on a wall here. Not sure if it's a warning or a claim.",
+        "Found a supply cache tucked behind a dumpster. Grabbing it fast.",
+      ],
+      loot: [ {icon:'🔩', qty:2, name:'SCRAP METAL', rarity:'COMMON', cat:'parts'},
+              {icon:'💊', qty:1, name:'ANTIBIOTIC', rarity:'UNCOMMON', cat:'medical'} ],
+    },
+    {
+      id: 'rooftop', zone:'faceless', name: 'ROOFTOP STASH', level: 23, duration_seconds: 60, xp: 95,
+      desc: 'Climb to a rooftop cache that most people are too afraid of heights to reach.',
+      image: 'mission_garage.jpg',
+      narrative: [
+        "Fire escape groans with every step. Trying not to think about that.",
+        "Someone stashed supplies up here on purpose. Good instincts, whoever they were.",
+        "View from up here shows more masks moving below than I expected.",
+      ],
+      loot: [ {icon:'🥫', qty:1, name:'CANNED FOOD', rarity:'COMMON', cat:'food'},
+              {icon:'🔩', qty:1, name:'SCRAP METAL', rarity:'COMMON', cat:'parts'},
+              {icon:'🎭', qty:1, name:'MASK FRAGMENT', rarity:'★ RARE — FACELESS TRUST', cat:'parts', rare:true} ],
+    },
+    {
+      id: 'subway', zone:'faceless', name: 'SUBWAY ENTRANCE', level: 26, duration_seconds: 65, xp: 105,
+      desc: 'The old subway entrance leads somewhere the Faceless clearly use often.',
+      image: 'mission_pharmacy.jpg',
+      narrative: [
+        "Stairs go down into pitch black. Every instinct says turn around.",
+        "Fresh footprints in the dust, heading the same direction I am.",
+        "A supply drop, deliberately left. Someone wanted this found.",
+      ],
+      loot: [ {icon:'🔩', qty:2, name:'SCRAP METAL', rarity:'COMMON', cat:'parts'},
+              {icon:'🎭', qty:1, name:'MASK FRAGMENT', rarity:'★ RARE — FACELESS TRUST', cat:'parts', rare:true} ],
+    },
+    {
+      id: 'maskzero', zone:'faceless', name: "MASK ZERO'S TERRITORY", level: 30, duration_seconds: 75, xp: 130,
+      desc: 'Push into the heart of Faceless territory — only worth it if they already know your face.',
+      image: 'mission_depot.jpg',
+      narrative: [
+        "Nobody stopped me at the perimeter. That means something, one way or another.",
+        "Every mask I pass tracks me without a word.",
+        "Mask Zero's people let me leave with what I came for. Didn't expect that either.",
+      ],
+      loot: [ {icon:'🎭', qty:2, name:'MASK FRAGMENT', rarity:'★ RARE — FACELESS TRUST', cat:'parts', rare:true},
+              {icon:'💊', qty:1, name:'ANTIBIOTIC', rarity:'UNCOMMON', cat:'medical'} ],
+    },
+
+    // ---------------- THE BEACON (docks/factory, LV 18-30) ----------------
+    {
+      id: 'trawler', zone:'beacon', name: 'RUSTED TRAWLER', level: 18, duration_seconds: 50, xp: 78,
+      desc: 'Search a half-sunken fishing boat still tied to the dock.',
+      image: 'mission_depot.jpg',
+      narrative: [
+        "Deck tilts hard to one side. Every step is a small negotiation with gravity.",
+        "Cabin's flooded, but the storage lockers held.",
+        "Found wiring that Marcus would probably want to see.",
+      ],
+      loot: [ {icon:'🔌', qty:1, name:'ELECTRONIC COMPONENT', rarity:'UNCOMMON', cat:'parts'},
+              {icon:'🥫', qty:1, name:'CANNED FOOD', rarity:'COMMON', cat:'food'} ],
+    },
+    {
+      id: 'warehouse', zone:'beacon', name: 'DOCKSIDE WAREHOUSE', level: 21, duration_seconds: 55, xp: 88,
+      desc: 'Break into a warehouse the Beacon has been eyeing but never fully cleared.',
+      image: 'mission_garage.jpg',
+      narrative: [
+        "Padlock's rusted but the chain isn't. Cutting through takes longer than expected.",
+        "Crates stacked to the ceiling, most empty, a few very much not.",
+        "Generator parts. Marcus is going to want to hear about this.",
+      ],
+      loot: [ {icon:'🔌', qty:2, name:'ELECTRONIC COMPONENT', rarity:'UNCOMMON', cat:'parts'},
+              {icon:'⚙️', qty:1, name:'MOTOR PART', rarity:'UNCOMMON', cat:'parts'} ],
+    },
+    {
+      id: 'crane', zone:'beacon', name: 'THE OLD CRANE', level: 24, duration_seconds: 60, xp: 98,
+      desc: 'Climb the stalled port crane for a supply cache wedged in the control cab.',
+      image: 'mission_farmhouse.jpg',
+      narrative: [
+        "Ladder sways more than I'd like this high up.",
+        "Control cab's been someone's shelter, once. Not anymore.",
+        "Cache is exactly where the rumor said it'd be. Small mercies.",
+      ],
+      loot: [ {icon:'🔌', qty:1, name:'ELECTRONIC COMPONENT', rarity:'UNCOMMON', cat:'parts'},
+              {icon:'☕', qty:1, name:'COFFEE', rarity:'★ RARE — ENERGY BOOST', cat:'food', rare:true} ],
+    },
+    {
+      id: 'factoryfloor', zone:'beacon', name: 'FACTORY FLOOR', level: 27, duration_seconds: 65, xp: 108,
+      desc: 'The factory floor still holds parts nobody has been brave enough to retrieve.',
+      image: 'mission_garage.jpg',
+      narrative: [
+        "Machines frozen mid-cycle, like everyone just walked out one shift.",
+        "Chemical smell is stronger here. Not lingering longer than I have to.",
+        "Found the parts cache Marcus described almost exactly.",
+      ],
+      loot: [ {icon:'🔌', qty:2, name:'ELECTRONIC COMPONENT', rarity:'UNCOMMON', cat:'parts'},
+              {icon:'🔧', qty:1, name:'TOOL KIT', rarity:'COMMON', cat:'parts'} ],
+    },
+    {
+      id: 'workshop', zone:'beacon', name: "MARCUS'S WORKSHOP RUN", level: 30, duration_seconds: 75, xp: 125,
+      desc: "A supply run Marcus trusts you to make without him watching over your shoulder.",
+      image: 'mission_pharmacy.jpg',
+      narrative: [
+        "He gave me the route himself this time. No test, no shadow.",
+        "Everything's where he said it would be. He knows this place better than anyone.",
+        "Heading back with more than he asked for. Curious what he'll say.",
+      ],
+      loot: [ {icon:'🔌', qty:2, name:'ELECTRONIC COMPONENT', rarity:'UNCOMMON', cat:'parts'},
+              {icon:'📟', qty:1, name:'RADIO CHIP', rarity:'★ RARE — REPAIRS THE FAMILY RADIO', cat:'parts', rare:true} ],
+    },
+
+    // ---------------- RADIO TOWER (endgame approach, LV 25-45) ----------------
+    {
+      id: 'relay', zone:'radio', name: 'BROADCAST RELAY STATION', level: 25, duration_seconds: 70, xp: 120,
+      desc: 'A relay station along the way to the tower still has working parts inside.',
+      image: 'mission_garage.jpg',
+      narrative: [
+        "Static crackles from a speaker that shouldn't still have power.",
+        "Wiring in here matches what's missing from the family radio.",
+        "Pulling everything usable before the static gets any louder.",
+      ],
+      loot: [ {icon:'📟', qty:1, name:'RADIO CHIP', rarity:'★ RARE — REPAIRS THE FAMILY RADIO', cat:'parts', rare:true},
+              {icon:'🔌', qty:1, name:'ELECTRONIC COMPONENT', rarity:'UNCOMMON', cat:'parts'} ],
+    },
+    {
+      id: 'bridgecrossing', zone:'radio', name: 'THE BRIDGE CROSSING', level: 30, duration_seconds: 80, xp: 140,
+      desc: 'Cross the cracked bridge toward the tower — the only way in from this side.',
+      image: 'mission_depot.jpg',
+      narrative: [
+        "Bridge groans under every step. Not looking down.",
+        "Half the span is missing entirely. Taking the long way around a gap.",
+        "Made it across. The tower looks a lot bigger up close.",
+      ],
+      loot: [ {icon:'📟', qty:1, name:'RADIO CHIP', rarity:'★ RARE — REPAIRS THE FAMILY RADIO', cat:'parts', rare:true},
+              {icon:'🥫', qty:1, name:'CANNED FOOD', rarity:'COMMON', cat:'food'} ],
+    },
+    {
+      id: 'staticfield', zone:'radio', name: 'STATIC FIELD', level: 35, duration_seconds: 90, xp: 160,
+      desc: 'A field thick with wreckage where the static never quite stops.',
+      image: 'mission_farmhouse.jpg',
+      narrative: [
+        "The air itself feels wrong here, like it's humming underneath everything.",
+        "Something's calling to the others nearby. Moving quiet, moving fast.",
+        "Got clear of the field. Ears still ringing from whatever that was.",
+      ],
+      loot: [ {icon:'📟', qty:1, name:'RADIO CHIP', rarity:'★ RARE — REPAIRS THE FAMILY RADIO', cat:'parts', rare:true},
+              {icon:'💊', qty:1, name:'ANTIBIOTIC', rarity:'UNCOMMON', cat:'medical'} ],
+    },
+    {
+      id: 'beneathtower', zone:'radio', name: 'BENEATH THE TOWER', level: 40, duration_seconds: 100, xp: 190,
+      desc: 'The maintenance tunnels beneath the tower hold the last pieces you need.',
+      image: 'mission_garage.jpg',
+      narrative: [
+        "Tunnels smell like ash even this far underground.",
+        "Equipment down here is decades old, but some of it still hums with power.",
+        "This is the last chip. After this, the radio has everything it needs.",
+      ],
+      loot: [ {icon:'📟', qty:1, name:'RADIO CHIP', rarity:'★ RARE — REPAIRS THE FAMILY RADIO', cat:'parts', rare:true},
+              {icon:'🔌', qty:2, name:'ELECTRONIC COMPONENT', rarity:'UNCOMMON', cat:'parts'} ],
+    },
+    {
+      id: 'lastfrequency', zone:'radio', name: 'LAST FREQUENCY', level: 45, duration_seconds: 120, xp: 250,
+      desc: 'Climb to the top of the tower itself. Whatever answer exists is up there.',
+      image: 'mission_depot.jpg',
+      narrative: [
+        "Every step up feels heavier than the last, and it isn't the climb.",
+        "The signal is so close now I can almost hear it without the radio at all.",
+        "Whatever happens next, I made it here. That has to count for something.",
+      ],
+      loot: [ {icon:'☕', qty:1, name:'COFFEE', rarity:'★ RARE — ENERGY BOOST', cat:'food', rare:true},
+              {icon:'🌿', qty:1, name:'HERBAL REMEDY', rarity:'UNCOMMON', cat:'medical'} ],
+    },
   ];
 
   const missionListView = document.getElementById('missionListView');
   const missionActiveView = document.getElementById('missionActiveView');
-  const missionList = document.getElementById('missionList');
+
+  const zoneExpanded = { shelter:true, roots:false, faceless:false, beacon:false, radio:false };
+
+  function renderMissionCard(m, playerLevel){
+    const locked = playerLevel < m.level;
+    const card = document.createElement('div');
+    card.className = 'mission-list-card' + (locked ? ' locked' : '');
+
+    const rewardIcons = m.loot.map(item =>
+      `<div class="loot-item-sm${item.rare ? ' unknown' : ''}">${item.icon}</div>`
+    ).join('');
+
+    card.innerHTML = `
+      <div class="head">
+        <span class="name">${m.name}</span>
+        <span class="lvl">LV ${m.level}</span>
+      </div>
+      <div class="desc">${m.desc}</div>
+      <div class="reward-row">${rewardIcons}</div>
+      <div class="meta">
+        <span class="duration">⏱ ${formatTime(m.duration_seconds)}</span>
+        <span class="go">${locked ? '🔒 LOCKED' : 'GO'}</span>
+      </div>
+    `;
+    card.addEventListener('click', () => {
+      if(locked){
+        showToast('REQUIRES LEVEL ' + m.level + ' — YOU ARE LV ' + playerLevel);
+        return;
+      }
+      startMission(m.id);
+    });
+    return card;
+  }
 
   function renderMissionList(){
-    missionList.innerHTML = '';
+    const container = document.getElementById('zoneAccordion');
+    container.innerHTML = '';
     const playerLevel = playerState ? playerState.level : 1;
 
-    MISSIONS.forEach(m => {
-      const locked = playerLevel < m.level;
-      const card = document.createElement('div');
-      card.className = 'mission-list-card' + (locked ? ' locked' : '');
+    ZONES.forEach(zone => {
+      const zoneMissions = MISSIONS.filter(m => m.zone === zone.id);
+      const expanded = zoneExpanded[zone.id];
 
-      const rewardIcons = m.loot.map(item =>
-        `<div class="loot-item-sm${item.rare ? ' unknown' : ''}">${item.icon}</div>`
-      ).join('');
+      const wrap = document.createElement('div');
 
-      card.innerHTML = `
-        <div class="head">
-          <span class="name">${m.name}</span>
-          <span class="lvl">LV ${m.level}</span>
-        </div>
-        <div class="desc">${m.desc}</div>
-        <div class="reward-row">${rewardIcons}</div>
-        <div class="meta">
-          <span class="duration">⏱ ${formatTime(m.duration_seconds)}</span>
-          <span class="go">${locked ? '🔒 LOCKED' : 'GO'}</span>
-        </div>
-      `;
-      card.addEventListener('click', () => {
-        if(locked){
-          showToast('REQUIRES LEVEL ' + m.level + ' — YOU ARE LV ' + playerLevel);
-          return;
-        }
-        startMission(m.id);
+      const header = document.createElement('div');
+      header.className = 'zone-header' + (expanded ? ' expanded' : '');
+      header.innerHTML =
+        '<span class="zone-emblem">' + zone.emblem + '</span>' +
+        '<span class="zone-name">' + zone.name + '</span>' +
+        '<span class="zone-count">' + zoneMissions.length + ' MISSIONS</span>' +
+        '<span class="zone-arrow">▸</span>';
+      header.addEventListener('click', () => {
+        zoneExpanded[zone.id] = !zoneExpanded[zone.id];
+        renderMissionList();
       });
-      missionList.appendChild(card);
+      wrap.appendChild(header);
+
+      if(expanded){
+        const body = document.createElement('div');
+        body.className = 'zone-body';
+        zoneMissions.forEach(m => body.appendChild(renderMissionCard(m, playerLevel)));
+        wrap.appendChild(body);
+      }
+
+      container.appendChild(wrap);
     });
   }
   renderMissionList();
@@ -2339,6 +2713,10 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     document.getElementById('missionActions').style.display = 'flex';
     document.getElementById('riskAlert').classList.remove('show');
 
+    narrativeShownIndex = -1;
+    document.getElementById('narrativeText').textContent = '';
+    revealNextNarrativeLine(mission, 0);
+
     const lootPreview = document.getElementById('lootPreview');
     lootPreview.innerHTML = '';
     mission.loot.forEach(item => {
@@ -2349,6 +2727,35 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     });
 
     runMissionTimer(mission, elapsedSeconds);
+  }
+
+  // ---------- Typewriter narrative during missions ----------
+  let narrativeShownIndex = -1;
+  let typewriterTimer = null;
+
+  function typewriteLine(text){
+    clearInterval(typewriterTimer);
+    const el = document.getElementById('narrativeText');
+    el.textContent = '';
+    let i = 0;
+    typewriterTimer = setInterval(() => {
+      el.textContent += text[i];
+      i++;
+      if(i >= text.length) clearInterval(typewriterTimer);
+    }, 28);
+  }
+
+  function revealNextNarrativeLine(mission, progressPct){
+    const lines = mission.narrative;
+    if(!lines || !lines.length) return;
+    // Line 0 at start, line 1 around 40%, line 2 around 75%, spread evenly if more/fewer lines
+    const thresholds = lines.map((_, i) => Math.round((i / lines.length) * 100));
+    let targetIndex = narrativeShownIndex;
+    thresholds.forEach((t, i) => { if(progressPct >= t) targetIndex = i; });
+    if(targetIndex > narrativeShownIndex){
+      narrativeShownIndex = targetIndex;
+      typewriteLine(lines[targetIndex]);
+    }
   }
 
   function runMissionTimer(mission, elapsedSecondsAtStart){
@@ -2364,6 +2771,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
 
       document.getElementById('progressFill').style.width = progressPct + '%';
       document.getElementById('timerDisplay').textContent = formatTime(Math.max(0,remaining));
+      revealNextNarrativeLine(mission, progressPct);
 
       if(!riskShown && elapsed >= total/2){
         document.getElementById('riskAlert').classList.add('show');
