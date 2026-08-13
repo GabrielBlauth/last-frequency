@@ -488,6 +488,31 @@
   .postit-sub{
     font-family:'Kalam', cursive; font-weight:400; font-size:15px; color:#3a3220; margin-top:4px;
   }
+
+  /* ---- Region map ---- */
+  .map-scroll{
+    width:100%; height:100%; overflow-x:auto; overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
+    background:#0a0b0d;
+  }
+  .map-layer-wrap{
+    position:relative; height:100%; width:max-content;
+  }
+  .map-img{
+    height:100%; width:auto; display:block; user-select:none; -webkit-user-drag:none;
+  }
+  .map-img-color{
+    position:absolute; top:0; left:0; height:100%; width:auto;
+    clip-path: url(#mapZoneClip);
+  }
+  .map-pin{
+    position:absolute; transform:translate(-50%,-50%);
+    width:30px; height:30px; border-radius:50%;
+    background: radial-gradient(circle, #1a1a1a 60%, #000);
+    border:2px solid var(--gold); box-shadow: 0 0 8px rgba(0,0,0,0.7), 0 0 10px rgba(255,210,63,0.4);
+    display:flex; align-items:center; justify-content:center; font-size:15px;
+    cursor:pointer; z-index:3;
+  }
   .mission-list-card:active{ transform:translate(1px,1px); }
   .mission-list-card .head{ display:flex; justify-content:space-between; align-items:center; }
   .mission-list-card .name{ font-family:'Press Start 2P'; font-size:8px; color:var(--bone); text-shadow:1px 1px 0 #000; }
@@ -922,14 +947,28 @@
       <div class="screen" id="mapScreen" style="position:absolute; inset:0; z-index:18; display:none;">
         <div class="statusbar">
           <span class="back" id="mapBack">‹ BACK</span>
-          <span class="title">SURVIVOR'S JOURNAL</span>
+          <span class="title">REGION MAP</span>
           <span style="width:40px;"></span>
         </div>
 
-        <div class="content">
-          <div class="hint" style="margin-top:-2px;">Notes I've kept on the groups still holding on out there.</div>
-          <div id="factionList" style="display:flex; flex-direction:column; gap:11px; padding-bottom:14px;"></div>
+        <div class="content" style="padding:0; overflow:hidden;">
+          <div class="map-scroll" id="mapScroll">
+            <div class="map-layer-wrap">
+              <img src="map_gray.jpg" class="map-img" id="mapImgBase">
+              <img src="map_color.jpg" class="map-img map-img-color" id="mapImgColor">
+              <div class="map-pin" id="pinShelter" style="left:11%; top:58%;" data-zone="shelter">🏚️</div>
+              <div class="map-pin" id="pinRoots" style="left:38%; top:10%;" data-zone="roots">🌱</div>
+              <div class="map-pin" id="pinFaceless" style="left:47%; top:48%;" data-zone="faceless">🎭</div>
+              <div class="map-pin" id="pinBeacon" style="left:63%; top:86%;" data-zone="beacon">💡</div>
+              <div class="map-pin" id="pinTower" style="left:92%; top:38%;" data-zone="tower">📡</div>
+            </div>
+          </div>
+          <div class="hint" style="padding:8px 10px 0;">Drag the map sideways to explore. Grayed zones haven't earned enough trust to reveal yet.</div>
         </div>
+
+        <svg width="0" height="0" style="position:absolute;">
+          <clipPath id="mapZoneClip" clipPathUnits="objectBoundingBox"></clipPath>
+        </svg>
       </div>
     </div>
   </div>
@@ -1976,8 +2015,50 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     },
   ];
 
+  // ---------- Region Map: reveal zones in color as reputation grows ----------
+  const MAP_ZONES = [
+    // x/y/width/height as fractions of the full image (0 to 1), matching objectBoundingBox
+    { id:'shelter',  rect:[0.00, 0.28, 0.31, 0.72], unlocked: () => true },
+    { id:'roots',    rect:[0.18, 0.00, 0.62, 0.24], unlocked: () => ((playerState.faction_reputation||{}).roots ?? 50) >= 60 },
+    { id:'faceless', rect:[0.32, 0.20, 0.38, 0.62], unlocked: () => ((playerState.faction_reputation||{}).faceless ?? 50) >= 60 },
+    { id:'beacon',   rect:[0.32, 0.68, 0.42, 0.32], unlocked: () => ((playerState.faction_reputation||{}).beacon ?? 50) >= 60 },
+    { id:'tower',    rect:[0.84, 0.15, 0.16, 0.60], unlocked: () => (playerState.radio_progress || 0) >= 100 },
+  ];
+
+  function renderMapZones(){
+    if(!playerState) return;
+    const clip = document.getElementById('mapZoneClip');
+    clip.innerHTML = '';
+    MAP_ZONES.forEach(zone => {
+      if(!zone.unlocked()) return;
+      const [x,y,w,h] = zone.rect;
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x', x); rect.setAttribute('y', y);
+      rect.setAttribute('width', w); rect.setAttribute('height', h);
+      clip.appendChild(rect);
+    });
+  }
+
+  const MAP_PIN_NAMES = { shelter:'YOUR SHELTER', roots:'THE ROOTS', faceless:'THE FACELESS', beacon:'THE BEACON', tower:'THE RADIO TOWER' };
+
+  document.querySelectorAll('.map-pin').forEach(pin => {
+    pin.addEventListener('click', () => {
+      const zoneId = pin.dataset.zone;
+      const zone = MAP_ZONES.find(z => z.id === zoneId);
+      const unlocked = zone ? zone.unlocked() : false;
+      const name = MAP_PIN_NAMES[zoneId] || zoneId;
+      if(zoneId === 'shelter'){ showToast(name); return; }
+      if(zoneId === 'tower'){
+        showToast(unlocked ? name + ' — SIGNAL FULLY TRACED' : name + ' — REPAIR THE RADIO TO LOCATE IT');
+        return;
+      }
+      const rep = ((playerState.faction_reputation||{})[zoneId]) ?? 50;
+      showToast(name + ' — STANDING ' + rep + (unlocked ? ' (TRUSTED)' : ' (STILL WARY)'));
+    });
+  });
+
   function openMapScreen(){
-    renderFactionList();
+    renderMapZones();
     document.getElementById('mapScreen').style.display = 'flex';
   }
   function closeMapScreen(){
@@ -2076,33 +2157,6 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     card.addEventListener('click', () => openJournalCategory(card.dataset.journalCat));
   });
 
-
-  function renderFactionList(){
-    const list = document.getElementById('factionList');
-    if(!list || !playerState) return;
-    const rep = playerState.faction_reputation || { beacon:50, roots:50, faceless:50 };
-    list.innerHTML = '';
-
-    FACTIONS.forEach(f => {
-      const value = rep[f.id] ?? 50;
-      const card = document.createElement('div');
-      card.className = 'faction-card ' + f.cls;
-      card.innerHTML =
-        '<div class="faction-entry-date"><span>DAY ' + String(f.entryDay).padStart(3,'0') + '</span><span>PERSONAL LOG</span></div>' +
-        '<div class="faction-head">' +
-          '<span class="emblem">' + f.emblem + '</span>' +
-          '<div><div class="fname">' + f.name + '</div><div class="fleader">Led by ' + f.leader + '</div></div>' +
-        '</div>' +
-        '<div class="faction-desc">' + f.desc + '</div>' +
-        '<div class="faction-rep-row">' +
-          '<span class="faction-rep-label">STANDING</span>' +
-          '<div class="faction-rep-bar"><div class="faction-rep-fill" style="width:' + value + '%"></div></div>' +
-          '<span class="faction-rep-num">' + value + '</span>' +
-        '</div>' +
-        '<div class="faction-hint">' + f.hint + '</div>';
-      list.appendChild(card);
-    });
-  }
 
   document.getElementById('repairRadioBtn').addEventListener('click', () => {
     if(!playerState) return;
