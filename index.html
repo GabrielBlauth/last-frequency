@@ -17,7 +17,7 @@
 
 <!-- Android / general -->
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
   :root{
@@ -425,6 +425,34 @@
   .faction-card.faceless .faction-rep-fill{ background: linear-gradient(90deg,#6a2424,#a84040); }
   .faction-rep-num{ font-size:12px; color:#5a4a2a; width:30px; text-align:right; flex-shrink:0; }
   .faction-hint{ font-size:13px; color:#5a4a2a; font-style:italic; border-top:1px dashed #8a7850; padding-top:8px; position:relative; }
+
+  /* ---- Journal notebook pages ---- */
+  .notebook-page{
+    background:
+      repeating-linear-gradient(180deg, transparent 0 27px, #9ab0c9 27px 28px),
+      linear-gradient(155deg, #f4ecd8 0%, #e8dcc0 100%);
+    border:2px solid #000; box-shadow: 4px 5px 0 rgba(0,0,0,0.5);
+    padding:14px 14px 16px 40px;
+    position:relative;
+    transform:rotate(var(--tilt, 0deg));
+  }
+  .notebook-page::before{
+    content:""; position:absolute; top:0; bottom:0; left:26px; width:2px; background:#c96a6a; opacity:0.55;
+  }
+  .notebook-page:nth-child(odd){ --tilt: -0.4deg; }
+  .notebook-page:nth-child(even){ --tilt: 0.35deg; }
+  .notebook-day{
+    font-family:'Kalam', cursive; font-weight:700; font-size:15px; color:#8a3a2a;
+    margin-bottom:2px; letter-spacing:0.5px;
+  }
+  .notebook-subject{
+    font-family:'Kalam', cursive; font-weight:700; font-size:20px; color:#1a1710;
+    text-decoration: underline; text-decoration-color:#1a1710aa; margin-bottom:8px;
+  }
+  .notebook-text{
+    font-family:'Kalam', cursive; font-weight:400; font-size:18px; color:#232017;
+    line-height:1.55;
+  }
   .mission-list-card:active{ transform:translate(1px,1px); }
   .mission-list-card .head{ display:flex; justify-content:space-between; align-items:center; }
   .mission-list-card .name{ font-family:'Press Start 2P'; font-size:8px; color:var(--bone); text-shadow:1px 1px 0 #000; }
@@ -697,17 +725,29 @@
           </div>
         </div>
 
-        <!-- JOURNAL VIEW (placeholder — note content coming next) -->
+        <!-- JOURNAL VIEW -->
         <div class="view" id="view-journal">
           <div class="section-lbl">SURVIVOR'S JOURNAL</div>
           <div style="display:flex; flex-direction:column; gap:9px;">
-            <div class="mission-list-card"><div class="head"><span class="name">PERSONAL LOG</span></div><div class="desc">Coming soon.</div></div>
-            <div class="mission-list-card"><div class="head"><span class="name">THE BEACON</span></div><div class="desc">Coming soon.</div></div>
-            <div class="mission-list-card"><div class="head"><span class="name">THE ROOTS</span></div><div class="desc">Coming soon.</div></div>
-            <div class="mission-list-card"><div class="head"><span class="name">THE FACELESS</span></div><div class="desc">Coming soon.</div></div>
+            <div class="mission-list-card" data-journal-cat="personal"><div class="head"><span class="name">PERSONAL LOG</span></div><div class="desc">Your own notes since day one.</div></div>
+            <div class="mission-list-card" data-journal-cat="beacon"><div class="head"><span class="name">THE BEACON</span></div><div class="desc">Notes on Marcus and his people.</div></div>
+            <div class="mission-list-card" data-journal-cat="roots"><div class="head"><span class="name">THE ROOTS</span></div><div class="desc">Notes on Eleanor and her people.</div></div>
+            <div class="mission-list-card" data-journal-cat="faceless"><div class="head"><span class="name">THE FACELESS</span></div><div class="desc">Notes on the masked ones.</div></div>
           </div>
         </div>
 
+      </div>
+
+      <!-- JOURNAL CATEGORY READER OVERLAY -->
+      <div class="screen" id="journalCategoryScreen" style="position:absolute; inset:0; z-index:18; display:none;">
+        <div class="statusbar">
+          <span class="back" id="journalCategoryBack">‹ BACK</span>
+          <span class="title" id="journalCategoryTitle">JOURNAL</span>
+          <span style="width:40px;"></span>
+        </div>
+        <div class="content" style="background: linear-gradient(180deg,#1a1712,#100e0a); padding:12px 0 0;">
+          <div id="journalEntryList" style="display:flex; flex-direction:column; gap:16px; padding:0 12px 20px;"></div>
+        </div>
       </div>
 
       <div class="navbar">
@@ -1870,12 +1910,12 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
   // =========================================================
   const FACTIONS = [
     {
-      id:'beacon', name:'THE BEACON', leader:'Renato "Engenheiro" Alves', emblem:'💡', cls:'beacon', entryDay:9,
+      id:'beacon', name:'THE BEACON', leader:'Marcus "The Engineer" Hale', emblem:'💡', cls:'beacon', entryDay:9,
       desc:"\"Silence isn't safety,\" he told me. \"Silence is surrender.\" He used to run city infrastructure, before. Now he wants the lights back no matter what it draws in. I get it. I don't trust it.",
       hint:"If they trust me more, maybe they'll share what they know about fixing things.",
     },
     {
-      id:'roots', name:'THE ROOTS', leader:'Dona Iracema', emblem:'🌱', cls:'roots', entryDay:14,
+      id:'roots', name:'THE ROOTS', leader:'Eleanor Voss', emblem:'🌱', cls:'roots', entryDay:14,
       desc:"They grow their own food out past the ridge. No radios, no chargers — she said she watched people claw each other over batteries while the crops went to waste. She doesn't trust anything with a battery in it. Including me, probably.",
       hint:"If they trust me more, maybe they'll show me safer paths through the ash.",
     },
@@ -1894,6 +1934,98 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     document.getElementById('mapScreen').style.display = 'none';
   }
   document.getElementById('mapBack').addEventListener('click', closeMapScreen);
+
+  // =========================================================
+  // JOURNAL — 40 story entries across 4 categories
+  // =========================================================
+  const JOURNAL_DATA = {
+    personal: {
+      title:'PERSONAL LOG', emblem:'🧍', cls:'personal',
+      entries:[
+        { day:3, subject:'First Night Alone', text:"Boarded up the last window before dark tonight. Every creak in this house sounds like a footstep now. I keep checking the locks even though I know I already checked them. Don't know how long it takes before that stops." },
+        { day:7, subject:'Someone at the Door', text:"Someone tried the door around 3 AM. Didn't open it. Didn't breathe too loud either, for a while. Heard them try the window next, then nothing. They were gone by sunrise. I don't know if they were looking for supplies or looking for me." },
+        { day:11, subject:'Not Alone Anymore', text:"Found a dog today, thin as a fence post, hiding under what's left of the neighbor's porch. He didn't run when I got close — just watched me, like he was deciding something. Neither of us has anyone else left, I think. He's inside now." },
+        { day:19, subject:'Too Close', text:"An Ashen wandered right up to the fence line last night. The radio was on when it happened — I don't think that was a coincidence. Killed the power the second I heard it outside. Won't make that mistake again." },
+        { day:25, subject:'First Real Meal', text:"Managed to cook something real for the first time since the Blackout — canned food, a little of everything I had on hand, actually put together instead of eaten cold out of the tin. Felt stronger by morning. It's a small thing. I'll still take it." },
+        { day:31, subject:'The Easy Choice', text:"Found someone going through a house two streets over. Weaker than me, scared, barely any supplies on them. I could have taken what they had without much of a fight. Didn't. Still not completely sure that was the smart move — but I know it was the right one." },
+        { day:37, subject:'The Fence Held', text:"A Cracked one got through the outer fence tonight, faster than I expected something that far gone could move. The reinforced door held. Barely. Need better locks, and probably a better plan for next time." },
+        { day:42, subject:'Wide Awake', text:"Brewed something with the coffee and water rations I'd been saving — felt like I could stay awake for days after. Didn't realize how tired I'd actually gotten until the fog lifted for a few hours." },
+        { day:46, subject:'He Brings Things Back', text:"The dog came back today dragging a can of something from wherever he wanders off to. Didn't ask him to. Wasn't expecting to care this much about a dog, but here we are." },
+        { day:50, subject:'Fifty Days', text:"Didn't think I'd count this high. Still no real answers, just more static on the radio and more days added to the wall. But I'm still here. That counts for something, even on the days it doesn't feel like it." },
+      ]
+    },
+    beacon: {
+      title:'THE BEACON', emblem:'💡', cls:'beacon',
+      entries:[
+        { day:9, subject:'The Man by the Substation', text:'Was scavenging near the old power substation on the north road when I saw him — crouched over an open panel, wiring spread across his lap like he was performing surgery on it. He noticed me before I could decide whether to back away. "Silence isn\'t safety," he said, not even looking up. "Silence is surrender." Didn\'t offer his name. Didn\'t ask for mine either. Said he used to run city infrastructure, before. I get the anger behind it. Still don\'t trust where it\'s pointed.' },
+        { day:13, subject:'A Fair Trade', text:"Traded some scrap for advice on wiring today. He barely looked up from his workbench the whole time we talked, hands never stopping. Fair trade, at least. No games." },
+        { day:20, subject:'The Panel Works', text:"Helped him get a solar panel working again — mostly just held things steady while he cursed at a loose connection. First time I've seen him smile since I've known him. Didn't last long, but it was real." },
+        { day:27, subject:"The Switch He Didn't Flip", text:"He told me about the day the Blackout hit. Says he was one switch-flip away from stopping it, or thinks he was — hard to tell if that's true or just a wound he keeps picking at. Doesn't sleep much either way." },
+        { day:34, subject:'Hands He Trusts', text:"He's letting me near the actual parts now, not just the scrap pile. Small thing, but it means something coming from him. Starting to trust my hands, if not my judgment yet." },
+        { day:40, subject:'What the Light Draws', text:"Ashen swarmed the edge of the camp tonight, drawn straight to their lights like I always warned they would be. Held the line together anyway. He didn't say thank you afterward. Didn't need to — I could see it costing him something to stay quiet about being wrong." },
+        { day:44, subject:'An Open Door', text:'"If your place ever falls through, there\'s room here," he said, like it wasn\'t a big deal. Didn\'t expect that from him. Don\'t think he expected to say it either.' },
+        { day:48, subject:'The Tower, Unspoken', text:"He mentioned the old control tower today, quieter than I've ever heard him. Didn't finish the thought. Just went back to work like he hadn't said anything at all. Whatever it means to him, he's not ready to hand it over yet." },
+        { day:52, subject:'No Questions Asked', text:"He handed me full access to the cache today without asking anything in return first. That's new. Didn't say why. I didn't ask." },
+        { day:57, subject:'Pick a Side', text:'"I need to know you\'re actually with us," he said today. Not asking for help anymore. Asking for a side. I don\'t think there\'s a neutral answer left to give him.' },
+      ]
+    },
+    roots: {
+      title:'THE ROOTS', emblem:'🌱', cls:'roots',
+      entries:[
+        { day:11, subject:'Smoke on the Ridge', text:"Saw smoke rising from the mountains again today — steady, controlled, not the kind a fire makes when it's out of control. A trader passing through mentioned a group living up there, growing their own food, keeping to themselves. Said they don't trust outsiders. Said they don't trust anything with a battery in it, either. Filed that away for later." },
+        { day:14, subject:'Eleanor Voss', text:"Finally made the climb up to find them. An older woman met me at the tree line before I got much further — didn't introduce herself right away, just watched me the entire time like I might short-circuit something just by standing there. Eventually told me her name was Eleanor. Didn't tell me much else." },
+        { day:18, subject:'An Uneasy Meal', text:"Shared a meal with them today. Barely a word exchanged the whole time — just watched how I ate, how I moved, like I was still being evaluated. Maybe I was." },
+        { day:23, subject:'Earning the Nod', text:"Helped with the harvest today. Sore hands by the end of it, but she nodded at me on the way out. First time. Felt like passing some kind of test I hadn't been told about." },
+        { day:29, subject:'What Actually Helps', text:"She showed me which plants actually treat infection instead of just looking hopeful in a jar. Practical, not warm. Still, it's more than she's given anyone else passing through, from what I've heard." },
+        { day:35, subject:'The Safer Path', text:"Told me about a route around the old highway that avoids the worst of the Ashen activity. Didn't have to share that. Did anyway." },
+        { day:39, subject:'Overheard', text:"Overheard some of them arguing near the barn — whether an outsider could really be trusted with what they've built here. She ended the argument flatly: said I'd earned my place. Didn't know she felt that. Didn't expect it to matter to me as much as it did." },
+        { day:43, subject:'The Field at Night', text:"An Ashen got into the crop field after dark. Helped drive it off before it could trample the winter stores. No thanks needed — the food staying in the ground was thanks enough for both of us." },
+        { day:47, subject:'The Cost of Batteries', text:"She told me about someone she lost early on, in a fight over batteries of all things — people tearing each other apart over something that couldn't even save them in the end. Understood the silence around technology here a lot better after that." },
+        { day:56, subject:'A Place, If I Wanted It', text:'Gave me a handful of seeds today, "for when you\'re ready to stop just surviving." Then, almost as an afterthought: "You\'d have a place here too, if you wanted it." No conditions attached, for once.' },
+      ]
+    },
+    faceless: {
+      title:'THE FACELESS', emblem:'🎭', cls:'faceless',
+      entries:[
+        { day:15, subject:'Who Holds the Center', text:"Heard it from three different people now, all saying the same thing: a group in masks controls the center of the city, and you don't go there without a reason they approve of first. Nobody seems to know why the masks, exactly — just that the ones who ignore the warning don't come back with good stories. Staying clear of the center for now." },
+        { day:18, subject:'First Sight of the Masks', text:"Saw them for the first time today, from a distance — three of them, faces completely covered, moving through the ruins like they owned the silence itself. Didn't approach. Didn't feel like a coincidence that they let me walk away without a word." },
+        { day:22, subject:'The Toll', text:"Cornered near the depot today. Paid the toll instead of fighting — cheaper than finding out what happens if I don't. No violence, no wasted words. Just business, apparently." },
+        { day:26, subject:'Guarding Something', text:"Saw a couple of them from a distance again, but this time they weren't shaking anyone down — they were guarding something, tense and alert, like whatever was behind them mattered more than anything in front. Didn't look like raiders in that moment. Didn't look like anything I expected." },
+        { day:30, subject:'Neither of Us Drew', text:"Face to face with two of them today, close enough to see the wear on their masks. Backed off instead of reaching for a weapon. Neither did they. Small mercy, maybe intentional." },
+        { day:33, subject:'Small Shoes', text:"Found signs of a hidden camp past their usual patrol line — laundry drying on a line, and shoes far too small to belong to anyone wearing a mask. Whatever they are, they're protecting people, not just themselves." },
+        { day:38, subject:'No Name Given', text:"Talked to one of them today without a fight breaking out, for once. Didn't get a name. Didn't really expect one. Got the sense they don't use names anymore, even with each other." },
+        { day:41, subject:'Mask Zero', text:"The one they answer to spoke to me directly today. Didn't raise their voice once. Didn't need to — everyone around went quiet the second they started talking." },
+        { day:45, subject:'A Clean Trade', text:"A trade went through today with no ambush, no toll, just a straightforward exchange like it was nothing unusual. Small thing on paper. Feels like a bigger shift than it should." },
+        { day:54, subject:'What the Masks Are For', text:'Finally understand it now. It was never about hiding who they are — it\'s about surviving the dust outside without becoming what\'s underneath it. "We\'re not asking you to trust us," Mask Zero told me. "Just to stay out of the way of what we\'re protecting." Fair enough, for now.' },
+      ]
+    },
+  };
+
+  function openJournalCategory(catId){
+    const cat = JOURNAL_DATA[catId];
+    if(!cat) return;
+    document.getElementById('journalCategoryTitle').textContent = cat.title;
+    const list = document.getElementById('journalEntryList');
+    list.innerHTML = '';
+    cat.entries.forEach(e => {
+      const page = document.createElement('div');
+      page.className = 'notebook-page';
+      page.innerHTML =
+        '<div class="notebook-day">DAY ' + String(e.day).padStart(3,'0') + '</div>' +
+        '<div class="notebook-subject">' + e.subject + '</div>' +
+        '<div class="notebook-text">' + e.text + '</div>';
+      list.appendChild(page);
+    });
+    document.getElementById('journalCategoryScreen').style.display = 'flex';
+  }
+  function closeJournalCategory(){
+    document.getElementById('journalCategoryScreen').style.display = 'none';
+  }
+  document.getElementById('journalCategoryBack').addEventListener('click', closeJournalCategory);
+  document.querySelectorAll('.mission-list-card[data-journal-cat]').forEach(card => {
+    card.addEventListener('click', () => openJournalCategory(card.dataset.journalCat));
+  });
+
 
   function renderFactionList(){
     const list = document.getElementById('factionList');
