@@ -507,11 +507,17 @@
   }
   .map-pin{
     position:absolute; transform:translate(-50%,-50%);
-    width:30px; height:30px; border-radius:50%;
-    background: radial-gradient(circle, #1a1a1a 60%, #000);
-    border:2px solid var(--gold); box-shadow: 0 0 8px rgba(0,0,0,0.7), 0 0 10px rgba(255,210,63,0.4);
-    display:flex; align-items:center; justify-content:center; font-size:15px;
+    display:flex; flex-direction:column; align-items:center; gap:2px;
     cursor:pointer; z-index:3;
+  }
+  .map-pin svg{
+    width:26px; height:26px;
+    filter: drop-shadow(0 0 2px #000) drop-shadow(0 2px 3px rgba(0,0,0,0.8));
+  }
+  .map-pin-label{
+    font-family:'Press Start 2P'; font-size:6px; color:#fff; white-space:nowrap;
+    background:rgba(0,0,0,0.75); border:1px solid #000; padding:3px 5px;
+    text-shadow:1px 1px 0 #000;
   }
   .mission-list-card:active{ transform:translate(1px,1px); }
   .mission-list-card .head{ display:flex; justify-content:space-between; align-items:center; }
@@ -956,11 +962,26 @@
             <div class="map-layer-wrap">
               <img src="map_gray.jpg" class="map-img" id="mapImgBase">
               <img src="map_color.jpg" class="map-img map-img-color" id="mapImgColor">
-              <div class="map-pin" id="pinShelter" style="left:11%; top:58%;" data-zone="shelter">🏚️</div>
-              <div class="map-pin" id="pinRoots" style="left:38%; top:10%;" data-zone="roots">🌱</div>
-              <div class="map-pin" id="pinFaceless" style="left:47%; top:48%;" data-zone="faceless">🎭</div>
-              <div class="map-pin" id="pinBeacon" style="left:63%; top:86%;" data-zone="beacon">💡</div>
-              <div class="map-pin" id="pinTower" style="left:92%; top:38%;" data-zone="tower">📡</div>
+              <div class="map-pin" id="pinShelter" style="left:13.6%; top:35.8%;" data-zone="shelter">
+                <svg viewBox="0 0 24 24" fill="white"><path fill-rule="evenodd" d="M12 22s8-9.5 8-14A8 8 0 1 0 4 8c0 4.5 8 14 8 14Zm0-10.5A3.5 3.5 0 1 1 12 4.5a3.5 3.5 0 0 1 0 7Z"/></svg>
+                <span class="map-pin-label">SHELTER</span>
+              </div>
+              <div class="map-pin" id="pinRoots" style="left:58.6%; top:4.2%;" data-zone="roots">
+                <svg viewBox="0 0 24 24" fill="white"><path fill-rule="evenodd" d="M12 22s8-9.5 8-14A8 8 0 1 0 4 8c0 4.5 8 14 8 14Zm0-10.5A3.5 3.5 0 1 1 12 4.5a3.5 3.5 0 0 1 0 7Z"/></svg>
+                <span class="map-pin-label">THE ROOTS</span>
+              </div>
+              <div class="map-pin" id="pinFaceless" style="left:52.0%; top:32.5%;" data-zone="faceless">
+                <svg viewBox="0 0 24 24" fill="white"><path fill-rule="evenodd" d="M12 22s8-9.5 8-14A8 8 0 1 0 4 8c0 4.5 8 14 8 14Zm0-10.5A3.5 3.5 0 1 1 12 4.5a3.5 3.5 0 0 1 0 7Z"/></svg>
+                <span class="map-pin-label">THE FACELESS</span>
+              </div>
+              <div class="map-pin" id="pinBeacon" style="left:71.8%; top:66.9%;" data-zone="beacon">
+                <svg viewBox="0 0 24 24" fill="white"><path fill-rule="evenodd" d="M12 22s8-9.5 8-14A8 8 0 1 0 4 8c0 4.5 8 14 8 14Zm0-10.5A3.5 3.5 0 1 1 12 4.5a3.5 3.5 0 0 1 0 7Z"/></svg>
+                <span class="map-pin-label">THE BEACON</span>
+              </div>
+              <div class="map-pin" id="pinTower" style="left:90.5%; top:33.0%;" data-zone="tower">
+                <svg viewBox="0 0 24 24" fill="white"><path fill-rule="evenodd" d="M12 22s8-9.5 8-14A8 8 0 1 0 4 8c0 4.5 8 14 8 14Zm0-10.5A3.5 3.5 0 1 1 12 4.5a3.5 3.5 0 0 1 0 7Z"/></svg>
+                <span class="map-pin-label">RADIO TOWER</span>
+              </div>
             </div>
           </div>
           <div class="hint" style="padding:8px 10px 0;">Drag the map sideways to explore. Grayed zones haven't earned enough trust to reveal yet.</div>
@@ -2018,11 +2039,11 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
   // ---------- Region Map: reveal zones in color as reputation grows ----------
   const MAP_ZONES = [
     // x/y/width/height as fractions of the full image (0 to 1), matching objectBoundingBox
-    { id:'shelter',  rect:[0.00, 0.28, 0.31, 0.72], unlocked: () => true },
-    { id:'roots',    rect:[0.18, 0.00, 0.62, 0.24], unlocked: () => ((playerState.faction_reputation||{}).roots ?? 50) >= 60 },
-    { id:'faceless', rect:[0.32, 0.20, 0.38, 0.62], unlocked: () => ((playerState.faction_reputation||{}).faceless ?? 50) >= 60 },
-    { id:'beacon',   rect:[0.32, 0.68, 0.42, 0.32], unlocked: () => ((playerState.faction_reputation||{}).beacon ?? 50) >= 60 },
-    { id:'tower',    rect:[0.84, 0.15, 0.16, 0.60], unlocked: () => (playerState.radio_progress || 0) >= 100 },
+    { id:'shelter',  rect:[0.00, 0.28, 0.28, 0.42], unlocked: () => true },
+    { id:'roots',    rect:[0.40, 0.00, 0.36, 0.28], unlocked: () => ((playerState.faction_reputation||{}).roots ?? 50) >= 60 },
+    { id:'faceless', rect:[0.34, 0.18, 0.34, 0.46], unlocked: () => ((playerState.faction_reputation||{}).faceless ?? 50) >= 60 },
+    { id:'beacon',   rect:[0.50, 0.60, 0.36, 0.40], unlocked: () => ((playerState.faction_reputation||{}).beacon ?? 50) >= 60 },
+    { id:'tower',    rect:[0.80, 0.14, 0.20, 0.58], unlocked: () => (playerState.radio_progress || 0) >= 100 },
   ];
 
   function renderMapZones(){
