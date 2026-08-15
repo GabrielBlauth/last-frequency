@@ -258,11 +258,13 @@
   .equip-slot{
     aspect-ratio:1; background: linear-gradient(160deg,#8a8d94,#6a6d74);
     border:2px solid #000; box-shadow: inset -1px -1px 0 rgba(0,0,0,0.3), inset 1px 1px 0 rgba(255,255,255,0.2);
-    cursor:pointer;
+    cursor:pointer; padding:4px;
   }
+  .equip-slot.filled{ background: linear-gradient(160deg,#20222b,#141519); box-shadow: inset -1px -1px 0 #000, inset 1px 1px 0 #3a3d47, 0 0 8px rgba(78,230,168,0.3); }
 
   .item-detail{ background: linear-gradient(160deg,#1c1e26,#131418); border:2px solid #000; padding:9px; display:flex; gap:9px; align-items:center; box-shadow: inset 0 0 0 1px #2c2e37;}
-  .item-detail .icon{font-size:27px;}
+  .item-detail .icon{font-size:27px; width:40px; height:40px; display:flex; align-items:center; justify-content:center;}
+  .item-detail .icon img{ width:100%; height:100%; object-fit:contain; }
   .item-detail .name{font-family:'Press Start 2P'; font-size:7px; color:var(--bone); margin-bottom:5px; text-shadow:1px 1px 0 #000;}
   .item-detail .rarity{font-size:13px; color:var(--gold); text-shadow:0 0 4px rgba(255,210,63,0.5);}
 
@@ -794,10 +796,11 @@
             <div class="equip-slot" data-slot="weapon" title="Weapon"></div>
             <div class="equip-slot" data-slot="ammo" title="Ammo"></div>
             <div class="equip-slot" data-slot="helmet" title="Helmet"></div>
-            <div class="equip-slot" data-slot="armor" title="Armor"></div>
+            <div class="equip-slot" data-slot="vest" title="Armor"></div>
             <div class="equip-slot" data-slot="pants" title="Pants"></div>
             <div class="equip-slot" data-slot="boots" title="Boots"></div>
           </div>
+          <div class="hint" id="equipBonusSummary" style="margin-top:6px;">No armor equipped</div>
 
           <div class="section-lbl" style="margin-top:10px;">ITEMS</div>
           <div class="inv-tabs">
@@ -1746,6 +1749,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     playerState.available_points = playerState.available_points ?? 0;
     playerState.recipes_unlocked = playerState.recipes_unlocked || { vitality:false, strength:false, energy:false, luck:false };
     playerState.faction_reputation = playerState.faction_reputation || { beacon:50, roots:50, faceless:50 };
+    playerState.equipment = playerState.equipment || { weapon:null, ammo:null, helmet:null, vest:null, pants:null, boots:null };
     playerState.inventory = playerState.inventory || DEFAULT_STATE.inventory;
     playerState.notify_at = playerState.notify_at ?? null;
     playerState.notified = playerState.notified ?? true;
@@ -1779,6 +1783,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     resetStatEditor();
     drawStatusPreview();
     renderJournalCounts();
+    renderEquipmentSlots();
     const activeTab = document.querySelector('.inv-tab.active')?.dataset.tab || 'food';
     renderInventory(activeTab);
     renderKitchen();
@@ -1851,6 +1856,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         available_points: playerState.available_points,
         recipes_unlocked: playerState.recipes_unlocked,
         faction_reputation: playerState.faction_reputation,
+        equipment: playerState.equipment,
         inventory: playerState.inventory,
         active_mission: playerState.active_mission,
         notify_at: playerState.notify_at,
@@ -2314,7 +2320,8 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         "Grabbing what's left before the light changes.",
       ],
       loot: [ {icon:'🥫', qty:2, name:'CANNED FOOD', rarity:'COMMON', cat:'food'},
-              {icon:BOTTLE_SVG, qty:1, name:'BOTTLED WATER', rarity:'COMMON', cat:'food'} ],
+              {icon:BOTTLE_SVG, qty:1, name:'BOTTLED WATER', rarity:'COMMON', cat:'food'} ,
+              {icon:'<img src="equip_icons/weapon_knife.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'KNIFE', rarity:'★ EQUIPMENT — MELEE WEAPON', cat:'weapon', rare:true, itemId:'WEAPON_KNIFE'}],
     },
     {
       id: 'market', zone:'shelter', name: 'ABANDONED MARKET', level: 3, duration_seconds: 25, xp: 28,
@@ -2326,7 +2333,8 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         "Found a few unopened cases behind a fallen shelf. Small win.",
       ],
       loot: [ {icon:'🥫', qty:2, name:'CANNED FOOD', rarity:'COMMON', cat:'food'},
-              {icon:'🩹', qty:1, name:'BANDAGE', rarity:'COMMON', cat:'medical'} ],
+              {icon:'🩹', qty:1, name:'BANDAGE', rarity:'COMMON', cat:'medical'} ,
+              {icon:'<img src="equip_icons/armor_a_helmet.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'SCRAP HELMET', rarity:'★ EQUIPMENT — SET A', cat:'parts', rare:true, itemId:'ARMOR_A_HELMET'}],
     },
     {
       id: 'pharmacy', zone:'shelter', name: 'RUINED PHARMACY', level: 5, duration_seconds: 30, xp: 35,
@@ -2351,7 +2359,9 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       ],
       loot: [ {icon:'⚙️', qty:1, name:'MOTOR PART', rarity:'UNCOMMON', cat:'parts'},
               {icon:'🔧', qty:2, name:'TOOL KIT', rarity:'COMMON', cat:'parts'},
-              {icon:'📟', qty:1, name:'RADIO CHIP', rarity:'★ RARE — REPAIRS THE FAMILY RADIO', cat:'parts', rare:true} ],
+              {icon:'📟', qty:1, name:'RADIO CHIP', rarity:'★ RARE — REPAIRS THE FAMILY RADIO', cat:'parts', rare:true} ,
+              {icon:'<img src="equip_icons/weapon_machete.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'MACHETE', rarity:'★ EQUIPMENT — MELEE WEAPON', cat:'weapon', rare:true, itemId:'WEAPON_MACHETE'},
+              {icon:'<img src="equip_icons/armor_a_vest.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'SCRAP VEST', rarity:'★ EQUIPMENT — SET A', cat:'parts', rare:true, itemId:'ARMOR_A_VEST'}],
     },
     {
       id: 'depot', zone:'shelter', name: 'MILITARY DEPOT', level: 15, duration_seconds: 45, xp: 60,
@@ -2365,7 +2375,10 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       loot: [ {icon:'🍖', qty:1, name:'MILITARY RATION', rarity:'UNCOMMON', cat:'food'},
               {icon:'💊', qty:1, name:'ANTIBIOTIC', rarity:'UNCOMMON', cat:'medical'},
               {icon:'☕', qty:1, name:'COFFEE', rarity:'★ RARE — ENERGY BOOST', cat:'food', rare:true},
-              {icon:'📟', qty:1, name:'RADIO CHIP', rarity:'★ RARE — REPAIRS THE FAMILY RADIO', cat:'parts', rare:true} ],
+              {icon:'📟', qty:1, name:'RADIO CHIP', rarity:'★ RARE — REPAIRS THE FAMILY RADIO', cat:'parts', rare:true} ,
+              {icon:'<img src="equip_icons/weapon_pistol.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'PISTOL', rarity:'★ EQUIPMENT — RANGED WEAPON', cat:'weapon', rare:true, itemId:'WEAPON_PISTOL'},
+              {icon:'<img src="equip_icons/ammo_pistol.png" style="width:100%;height:100%;object-fit:contain;">', qty:6, name:'PISTOL BULLETS', rarity:'★ EQUIPMENT — AMMO', cat:'weapon', rare:true, itemId:'AMMO_PISTOL'},
+              {icon:'<img src="equip_icons/armor_a_pants.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'SCRAP PANTS', rarity:'★ EQUIPMENT — SET A', cat:'parts', rare:true, itemId:'ARMOR_A_PANTS'}],
     },
 
     // ---------------- THE ROOTS (hills/farmland, LV 16-28) ----------------
@@ -2379,7 +2392,8 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         "A dog barked somewhere close. Moving faster now.",
       ],
       loot: [ {icon:'🌿', qty:2, name:'HERBAL REMEDY', rarity:'UNCOMMON', cat:'medical'},
-              {icon:'🥫', qty:1, name:'CANNED FOOD', rarity:'COMMON', cat:'food'} ],
+              {icon:'🥫', qty:1, name:'CANNED FOOD', rarity:'COMMON', cat:'food'} ,
+              {icon:'<img src="equip_icons/armor_a_boots.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'SCRAP BOOTS', rarity:'★ EQUIPMENT — SET A', cat:'parts', rare:true, itemId:'ARMOR_A_BOOTS'}],
     },
     {
       id: 'windmill', zone:'roots', name: 'THE OLD WINDMILL', level: 19, duration_seconds: 55, xp: 80,
@@ -2441,7 +2455,8 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         "Heard footsteps two aisles over. Holding still until they pass.",
       ],
       loot: [ {icon:'🔩', qty:1, name:'SCRAP METAL', rarity:'COMMON', cat:'parts'},
-              {icon:'🩹', qty:1, name:'BANDAGE', rarity:'COMMON', cat:'medical'} ],
+              {icon:'🩹', qty:1, name:'BANDAGE', rarity:'COMMON', cat:'medical'} ,
+              {icon:'<img src="equip_icons/armor_c_helmet.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'GAS MASK HELMET', rarity:'★ EQUIPMENT — SET C', cat:'parts', rare:true, itemId:'ARMOR_C_HELMET'}],
     },
     {
       id: 'silentblock', zone:'faceless', name: 'THE SILENT BLOCK', level: 20, duration_seconds: 55, xp: 85,
@@ -2453,7 +2468,8 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         "Found a supply cache tucked behind a dumpster. Grabbing it fast.",
       ],
       loot: [ {icon:'🔩', qty:2, name:'SCRAP METAL', rarity:'COMMON', cat:'parts'},
-              {icon:'💊', qty:1, name:'ANTIBIOTIC', rarity:'UNCOMMON', cat:'medical'} ],
+              {icon:'💊', qty:1, name:'ANTIBIOTIC', rarity:'UNCOMMON', cat:'medical'} ,
+              {icon:'<img src="equip_icons/armor_c_vest.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'GAS MASK VEST', rarity:'★ EQUIPMENT — SET C', cat:'parts', rare:true, itemId:'ARMOR_C_VEST'}],
     },
     {
       id: 'rooftop', zone:'faceless', name: 'ROOFTOP STASH', level: 23, duration_seconds: 60, xp: 95,
@@ -2466,7 +2482,8 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       ],
       loot: [ {icon:'🥫', qty:1, name:'CANNED FOOD', rarity:'COMMON', cat:'food'},
               {icon:'🔩', qty:1, name:'SCRAP METAL', rarity:'COMMON', cat:'parts'},
-              {icon:'🎭', qty:1, name:'MASK FRAGMENT', rarity:'★ RARE — FACELESS TRUST', cat:'parts', rare:true} ],
+              {icon:'🎭', qty:1, name:'MASK FRAGMENT', rarity:'★ RARE — FACELESS TRUST', cat:'parts', rare:true} ,
+              {icon:'<img src="equip_icons/armor_c_pants.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'GAS MASK PANTS', rarity:'★ EQUIPMENT — SET C', cat:'parts', rare:true, itemId:'ARMOR_C_PANTS'}],
     },
     {
       id: 'subway', zone:'faceless', name: 'SUBWAY ENTRANCE', level: 26, duration_seconds: 65, xp: 105,
@@ -2478,7 +2495,8 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         "A supply drop, deliberately left. Someone wanted this found.",
       ],
       loot: [ {icon:'🔩', qty:2, name:'SCRAP METAL', rarity:'COMMON', cat:'parts'},
-              {icon:'🎭', qty:1, name:'MASK FRAGMENT', rarity:'★ RARE — FACELESS TRUST', cat:'parts', rare:true} ],
+              {icon:'🎭', qty:1, name:'MASK FRAGMENT', rarity:'★ RARE — FACELESS TRUST', cat:'parts', rare:true} ,
+              {icon:'<img src="equip_icons/armor_c_boots.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'GAS MASK BOOTS', rarity:'★ EQUIPMENT — SET C', cat:'parts', rare:true, itemId:'ARMOR_C_BOOTS'}],
     },
     {
       id: 'maskzero', zone:'faceless', name: "MASK ZERO'S TERRITORY", level: 30, duration_seconds: 75, xp: 130,
@@ -2490,7 +2508,9 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         "Mask Zero's people let me leave with what I came for. Didn't expect that either.",
       ],
       loot: [ {icon:'🎭', qty:2, name:'MASK FRAGMENT', rarity:'★ RARE — FACELESS TRUST', cat:'parts', rare:true},
-              {icon:'💊', qty:1, name:'ANTIBIOTIC', rarity:'UNCOMMON', cat:'medical'} ],
+              {icon:'💊', qty:1, name:'ANTIBIOTIC', rarity:'UNCOMMON', cat:'medical'} ,
+              {icon:'<img src="equip_icons/weapon_autorifle.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'AUTORIFLE', rarity:'★ EQUIPMENT — RANGED WEAPON', cat:'weapon', rare:true, itemId:'WEAPON_AUTORIFLE'},
+              {icon:'<img src="equip_icons/ammo_rifle.png" style="width:100%;height:100%;object-fit:contain;">', qty:8, name:'RIFLE ROUNDS', rarity:'★ EQUIPMENT — AMMO', cat:'weapon', rare:true, itemId:'AMMO_RIFLE'}],
     },
 
     // ---------------- THE BEACON (docks/factory, LV 18-30) ----------------
@@ -2504,7 +2524,8 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         "Found wiring that Marcus would probably want to see.",
       ],
       loot: [ {icon:'🔌', qty:1, name:'ELECTRONIC COMPONENT', rarity:'UNCOMMON', cat:'parts'},
-              {icon:'🥫', qty:1, name:'CANNED FOOD', rarity:'COMMON', cat:'food'} ],
+              {icon:'🥫', qty:1, name:'CANNED FOOD', rarity:'COMMON', cat:'food'} ,
+              {icon:'<img src="equip_icons/armor_b_helmet.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'MILITARY HELMET', rarity:'★ EQUIPMENT — SET B', cat:'parts', rare:true, itemId:'ARMOR_B_HELMET'}],
     },
     {
       id: 'warehouse', zone:'beacon', name: 'DOCKSIDE WAREHOUSE', level: 21, duration_seconds: 55, xp: 88,
@@ -2516,7 +2537,10 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         "Generator parts. Marcus is going to want to hear about this.",
       ],
       loot: [ {icon:'🔌', qty:2, name:'ELECTRONIC COMPONENT', rarity:'UNCOMMON', cat:'parts'},
-              {icon:'⚙️', qty:1, name:'MOTOR PART', rarity:'UNCOMMON', cat:'parts'} ],
+              {icon:'⚙️', qty:1, name:'MOTOR PART', rarity:'UNCOMMON', cat:'parts'} ,
+              {icon:'<img src="equip_icons/weapon_shotgun.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'SHOTGUN', rarity:'★ EQUIPMENT — RANGED WEAPON', cat:'weapon', rare:true, itemId:'WEAPON_SHOTGUN'},
+              {icon:'<img src="equip_icons/ammo_shotgun.png" style="width:100%;height:100%;object-fit:contain;">', qty:6, name:'SHOTGUN SHELLS', rarity:'★ EQUIPMENT — AMMO', cat:'weapon', rare:true, itemId:'AMMO_SHOTGUN'},
+              {icon:'<img src="equip_icons/armor_b_vest.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'MILITARY VEST', rarity:'★ EQUIPMENT — SET B', cat:'parts', rare:true, itemId:'ARMOR_B_VEST'}],
     },
     {
       id: 'crane', zone:'beacon', name: 'THE OLD CRANE', level: 24, duration_seconds: 60, xp: 98,
@@ -2528,7 +2552,8 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         "Cache is exactly where the rumor said it'd be. Small mercies.",
       ],
       loot: [ {icon:'🔌', qty:1, name:'ELECTRONIC COMPONENT', rarity:'UNCOMMON', cat:'parts'},
-              {icon:'☕', qty:1, name:'COFFEE', rarity:'★ RARE — ENERGY BOOST', cat:'food', rare:true} ],
+              {icon:'☕', qty:1, name:'COFFEE', rarity:'★ RARE — ENERGY BOOST', cat:'food', rare:true} ,
+              {icon:'<img src="equip_icons/armor_b_pants.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'MILITARY PANTS', rarity:'★ EQUIPMENT — SET B', cat:'parts', rare:true, itemId:'ARMOR_B_PANTS'}],
     },
     {
       id: 'factoryfloor', zone:'beacon', name: 'FACTORY FLOOR', level: 27, duration_seconds: 65, xp: 108,
@@ -2540,7 +2565,8 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         "Found the parts cache Marcus described almost exactly.",
       ],
       loot: [ {icon:'🔌', qty:2, name:'ELECTRONIC COMPONENT', rarity:'UNCOMMON', cat:'parts'},
-              {icon:'🔧', qty:1, name:'TOOL KIT', rarity:'COMMON', cat:'parts'} ],
+              {icon:'🔧', qty:1, name:'TOOL KIT', rarity:'COMMON', cat:'parts'} ,
+              {icon:'<img src="equip_icons/armor_b_boots.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'MILITARY BOOTS', rarity:'★ EQUIPMENT — SET B', cat:'parts', rare:true, itemId:'ARMOR_B_BOOTS'}],
     },
     {
       id: 'workshop', zone:'beacon', name: "MARCUS'S WORKSHOP RUN", level: 30, duration_seconds: 75, xp: 125,
@@ -2566,7 +2592,8 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         "Pulling everything usable before the static gets any louder.",
       ],
       loot: [ {icon:'📟', qty:1, name:'RADIO CHIP', rarity:'★ RARE — REPAIRS THE FAMILY RADIO', cat:'parts', rare:true},
-              {icon:'🔌', qty:1, name:'ELECTRONIC COMPONENT', rarity:'UNCOMMON', cat:'parts'} ],
+              {icon:'🔌', qty:1, name:'ELECTRONIC COMPONENT', rarity:'UNCOMMON', cat:'parts'} ,
+              {icon:'<img src="equip_icons/armor_e_helmet.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'ADVANCED HELMET', rarity:'★ EQUIPMENT — SET E', cat:'parts', rare:true, itemId:'ARMOR_E_HELMET'}],
     },
     {
       id: 'bridgecrossing', zone:'radio', name: 'THE BRIDGE CROSSING', level: 30, duration_seconds: 80, xp: 140,
@@ -2578,7 +2605,8 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         "Made it across. The tower looks a lot bigger up close.",
       ],
       loot: [ {icon:'📟', qty:1, name:'RADIO CHIP', rarity:'★ RARE — REPAIRS THE FAMILY RADIO', cat:'parts', rare:true},
-              {icon:'🥫', qty:1, name:'CANNED FOOD', rarity:'COMMON', cat:'food'} ],
+              {icon:'🥫', qty:1, name:'CANNED FOOD', rarity:'COMMON', cat:'food'} ,
+              {icon:'<img src="equip_icons/armor_e_vest.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'ADVANCED VEST', rarity:'★ EQUIPMENT — SET E', cat:'parts', rare:true, itemId:'ARMOR_E_VEST'}],
     },
     {
       id: 'staticfield', zone:'radio', name: 'STATIC FIELD', level: 35, duration_seconds: 90, xp: 160,
@@ -2590,7 +2618,8 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         "Got clear of the field. Ears still ringing from whatever that was.",
       ],
       loot: [ {icon:'📟', qty:1, name:'RADIO CHIP', rarity:'★ RARE — REPAIRS THE FAMILY RADIO', cat:'parts', rare:true},
-              {icon:'💊', qty:1, name:'ANTIBIOTIC', rarity:'UNCOMMON', cat:'medical'} ],
+              {icon:'💊', qty:1, name:'ANTIBIOTIC', rarity:'UNCOMMON', cat:'medical'} ,
+              {icon:'<img src="equip_icons/armor_e_pants.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'ADVANCED PANTS', rarity:'★ EQUIPMENT — SET E', cat:'parts', rare:true, itemId:'ARMOR_E_PANTS'}],
     },
     {
       id: 'beneathtower', zone:'radio', name: 'BENEATH THE TOWER', level: 40, duration_seconds: 100, xp: 190,
@@ -2602,7 +2631,8 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         "This is the last chip. After this, the radio has everything it needs.",
       ],
       loot: [ {icon:'📟', qty:1, name:'RADIO CHIP', rarity:'★ RARE — REPAIRS THE FAMILY RADIO', cat:'parts', rare:true},
-              {icon:'🔌', qty:2, name:'ELECTRONIC COMPONENT', rarity:'UNCOMMON', cat:'parts'} ],
+              {icon:'🔌', qty:2, name:'ELECTRONIC COMPONENT', rarity:'UNCOMMON', cat:'parts'} ,
+              {icon:'<img src="equip_icons/armor_e_boots.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'ADVANCED BOOTS', rarity:'★ EQUIPMENT — SET E', cat:'parts', rare:true, itemId:'ARMOR_E_BOOTS'}],
     },
     {
       id: 'lastfrequency', zone:'radio', name: 'LAST FREQUENCY', level: 45, duration_seconds: 120, xp: 250,
@@ -2814,19 +2844,19 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       const qty = Math.max(0, Math.round(item.qty * fraction));
       if(qty <= 0) return;
 
-      // Radio Chip is a true rare drop, not guaranteed like other loot
-      if(item.name === 'RADIO CHIP'){
-        const dropChance = 0.4 * fraction;
+      // Radio Chip and equipment are true rare drops, not guaranteed like other loot
+      if(item.name === 'RADIO CHIP' || item.itemId){
+        const dropChance = (item.itemId ? 0.35 : 0.4) * fraction;
         if(Math.random() > dropChance) return;
       }
 
       const cat = item.cat;
       if(!inventoryData[cat]) inventoryData[cat] = [];
-      const existing = inventoryData[cat].find(i => i.name === item.name);
+      const existing = inventoryData[cat].find(i => item.itemId ? i.itemId === item.itemId : i.name === item.name);
       if(existing){
         existing.qty += qty;
       } else {
-        inventoryData[cat].push({ icon:item.icon, qty, name:item.name, rarity:item.rarity, rare:item.rare });
+        inventoryData[cat].push({ icon:item.icon, qty, name:item.name, rarity:item.rarity, rare:item.rare, itemId:item.itemId });
       }
       granted.push({ icon:item.icon, name:item.name, qty });
     });
@@ -3039,6 +3069,148 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     resetStatEditor();
   }
 
+  // =========================================================
+  // EQUIPMENT SYSTEM — weapons, ammo, armor sets
+  // =========================================================
+  const WEAPONS = {
+    WEAPON_KNIFE:      { name:'KNIFE', tier:1, ranged:false, icon:'equip_icons/weapon_knife.png' },
+    WEAPON_MACHETE:    { name:'MACHETE', tier:2, ranged:false, icon:'equip_icons/weapon_machete.png' },
+    WEAPON_PISTOL:     { name:'PISTOL', tier:3, ranged:true, ammoType:'AMMO_PISTOL', icon:'equip_icons/weapon_pistol.png' },
+    WEAPON_SHOTGUN:    { name:'SHOTGUN', tier:4, ranged:true, ammoType:'AMMO_SHOTGUN', icon:'equip_icons/weapon_shotgun.png' },
+    WEAPON_AUTORIFLE:  { name:'AUTORIFLE', tier:5, ranged:true, ammoType:'AMMO_RIFLE', icon:'equip_icons/weapon_autorifle.png' },
+  };
+  const AMMO = {
+    AMMO_PISTOL:  { name:'PISTOL BULLETS', icon:'equip_icons/ammo_pistol.png' },
+    AMMO_SHOTGUN: { name:'SHOTGUN SHELLS', icon:'equip_icons/ammo_shotgun.png' },
+    AMMO_RIFLE:   { name:'RIFLE ROUNDS', icon:'equip_icons/ammo_rifle.png' },
+  };
+  // Armor sets: each has a signature stat bonus per piece + bigger bonus for wearing all 4
+  const ARMOR_SETS = {
+    A: { label:'SCRAP', value:2 },
+    B: { label:'MILITARY', value:4 },
+    C: { label:'GAS MASK', value:7 },
+    E: { label:'ADVANCED', value:10 },
+  };
+  // Every piece always boosts the same stat, regardless of which set it belongs to.
+  const SLOT_STAT_MAP = { helmet:'hp', vest:'strength', pants:'energy', boots:'luck' };
+  const ARMOR_SLOTS = ['helmet','vest','pants','boots'];
+  const ARMOR = {};
+  ['A','B','C','E'].forEach(setId => {
+    ARMOR_SLOTS.forEach(slot => {
+      const id = 'ARMOR_' + setId + '_' + slot.toUpperCase();
+      const setInfo = ARMOR_SETS[setId];
+      ARMOR[id] = {
+        name: setInfo.label + ' ' + slot.toUpperCase(),
+        set: setId, slot: slot,
+        icon: 'equip_icons/armor_' + setId.toLowerCase() + '_' + slot + '.png',
+      };
+    });
+  });
+
+  const EQUIP_SLOT_KEYS = ['weapon','ammo','helmet','vest','pants','boots'];
+
+  function getEquipment(){
+    if(!playerState.equipment) playerState.equipment = { weapon:null, ammo:null, helmet:null, vest:null, pants:null, boots:null };
+    return playerState.equipment;
+  }
+
+  // Computes total armor bonus currently active from equipped pieces (only while equipped)
+  function computeArmorBonus(){
+    const equip = getEquipment();
+    const bonus = { hp:0, energy:0, strength:0, luck:0 };
+
+    ARMOR_SLOTS.forEach(slot => {
+      const itemId = equip[slot];
+      if(!itemId || !ARMOR[itemId]) return;
+      const piece = ARMOR[itemId];
+      const setInfo = ARMOR_SETS[piece.set];
+      const stat = SLOT_STAT_MAP[slot];
+      bonus[stat] += setInfo.value;
+    });
+
+    return bonus;
+  }
+
+  function renderEquipmentSlots(){
+    if(!playerState) return;
+    const equip = getEquipment();
+    EQUIP_SLOT_KEYS.forEach(slot => {
+      const el = document.querySelector('.equip-slot[data-slot="' + slot + '"]');
+      if(!el) return;
+      const itemId = equip[slot];
+      if(!itemId){
+        el.innerHTML = '';
+        el.classList.remove('filled');
+        return;
+      }
+      const def = slot === 'weapon' ? WEAPONS[itemId] : slot === 'ammo' ? AMMO[itemId] : ARMOR[itemId];
+      el.innerHTML = def ? '<img src="' + def.icon + '" style="width:100%;height:100%;object-fit:contain;">' : '';
+      el.classList.add('filled');
+    });
+
+    // Render armor bonus summary
+    const bonus = computeArmorBonus();
+    const parts = [];
+    if(bonus.hp) parts.push('+' + bonus.hp + ' HP');
+    if(bonus.energy) parts.push('+' + bonus.energy + ' ENR');
+    if(bonus.strength) parts.push('+' + bonus.strength + ' STR');
+    if(bonus.luck) parts.push('+' + bonus.luck + ' LCK');
+    const summaryEl = document.getElementById('equipBonusSummary');
+    if(summaryEl) summaryEl.textContent = parts.length ? ('ACTIVE BONUS: ' + parts.join('  ')) : 'No armor equipped';
+  }
+
+  function equipItem(catName, itemId, slotKey){
+    const equip = getEquipment();
+    // Return whatever was already in that slot back to inventory
+    const previous = equip[slotKey];
+    if(previous){
+      addToInventory(catName, previous, 1);
+    }
+    // Remove the newly equipped item from inventory (qty 1)
+    removeFromInventory(catName, itemId, 1);
+    equip[slotKey] = itemId;
+    queueSave();
+    renderEquipmentSlots();
+    renderInventory(document.querySelector('.inv-tab.active')?.dataset.tab || 'food');
+    showToast((WEAPONS[itemId] || AMMO[itemId] || ARMOR[itemId]).name + ' EQUIPPED');
+  }
+
+  function unequipSlot(slotKey){
+    const equip = getEquipment();
+    const itemId = equip[slotKey];
+    if(!itemId) return;
+    const catName = slotKey === 'weapon' ? 'weapon' : slotKey === 'ammo' ? 'weapon' : 'parts';
+    addToInventory(catName, itemId, 1);
+    equip[slotKey] = null;
+    queueSave();
+    renderEquipmentSlots();
+    renderInventory(document.querySelector('.inv-tab.active')?.dataset.tab || 'food');
+    showToast('UNEQUIPPED');
+  }
+
+  function addToInventory(cat, itemId, qty){
+    if(!inventoryData[cat]) inventoryData[cat] = [];
+    const def = WEAPONS[itemId] || AMMO[itemId] || ARMOR[itemId];
+    const existing = inventoryData[cat].find(i => i.itemId === itemId);
+    if(existing){ existing.qty += qty; }
+    else { inventoryData[cat].push({ itemId, icon:'<img src="' + def.icon + '" style="width:100%;height:100%;object-fit:contain;">', qty, name:def.name, rarity:'EQUIPMENT' }); }
+  }
+  function removeFromInventory(cat, itemId, qty){
+    if(!inventoryData[cat]) return;
+    const item = inventoryData[cat].find(i => i.itemId === itemId);
+    if(!item) return;
+    item.qty -= qty;
+    if(item.qty <= 0) inventoryData[cat] = inventoryData[cat].filter(i => i.itemId !== itemId);
+  }
+
+  document.querySelectorAll('.equip-slot').forEach(slotEl => {
+    slotEl.addEventListener('click', () => {
+      const slot = slotEl.dataset.slot;
+      if(getEquipment()[slot]) unequipSlot(slot);
+    });
+  });
+
+
   function renderInventory(tab){
     invGrid.innerHTML = '';
     const items = (inventoryData && inventoryData[tab]) || [];
@@ -3052,7 +3224,21 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         slot.addEventListener('click', () => {
           document.querySelectorAll('.inv-slot').forEach(s => s.classList.remove('selected'));
           slot.classList.add('selected');
-          itemDetail.innerHTML = '<div class="icon">'+item.icon+'</div><div><div class="name">'+item.name+'</div><div class="rarity">'+item.rarity+'</div></div>';
+          let extra = '';
+          if(item.itemId){
+            const slotKey = WEAPONS[item.itemId] ? 'weapon' : AMMO[item.itemId] ? 'ammo' : ARMOR[item.itemId] ? ARMOR[item.itemId].slot : null;
+            if(slotKey){
+              extra = '<div class="btn gold" id="equipItemBtn" style="margin-top:9px;">EQUIP</div>';
+            }
+          }
+          itemDetail.innerHTML = '<div class="icon">'+item.icon+'</div><div><div class="name">'+item.name+'</div><div class="rarity">'+item.rarity+'</div></div>' + extra;
+          const equipBtn = document.getElementById('equipItemBtn');
+          if(equipBtn){
+            equipBtn.addEventListener('click', () => {
+              const slotKey = WEAPONS[item.itemId] ? 'weapon' : AMMO[item.itemId] ? 'ammo' : ARMOR[item.itemId].slot;
+              equipItem(tab, item.itemId, slotKey);
+            });
+          }
         });
       } else {
         slot.className = 'inv-slot empty';
