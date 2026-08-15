@@ -1812,7 +1812,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     document.querySelectorAll('.xp-segment').forEach((seg, i) => {
       seg.classList.toggle('filled', i < filledSegments);
     });
-    document.getElementById('topXpLabel').textContent = xpIntoLevel + '/' + XP_PER_LEVEL + ' XP';
+    document.getElementById('topXpLabel').textContent = xp + '/' + (level * XP_PER_LEVEL) + ' XP';
   }
 
   function grantXP(amount){
