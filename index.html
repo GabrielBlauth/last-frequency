@@ -248,11 +248,18 @@
   .inv-tab{ flex:1; text-align:center; padding:8px 2px; font-family:'Press Start 2P'; font-size:7.5px; background: linear-gradient(160deg,#1c1e26,#111217); border:2px solid #000; color:var(--ash); cursor:pointer;}
   .inv-tab.active{ background: linear-gradient(160deg,var(--ember-dark),#3a0f06); color:var(--ember-hot); box-shadow: inset 0 0 8px rgba(255,106,61,0.3);}
   .inv-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:6px; background:#0a0b0d; border:2px solid #000; padding:9px; box-shadow: inset 0 0 20px rgba(0,0,0,0.6);}
-  .inv-slot{ aspect-ratio:1; background: linear-gradient(160deg,#20222b,#141519); border:2px solid #000; box-shadow: inset -1px -1px 0 #000, inset 1px 1px 0 #3a3d47; display:flex; align-items:center; justify-content:center; font-size:28px; position:relative; cursor:pointer;}
+  .inv-slot{ aspect-ratio:1; background: linear-gradient(160deg,#20222b,#141519); border:2px solid #000; box-shadow: inset -1px -1px 0 #000, inset 1px 1px 0 #3a3d47; display:flex; align-items:center; justify-content:center; font-size:44px; position:relative; cursor:pointer;}
   .inv-slot.empty{ opacity:0.2; cursor:default; }
-  .inv-slot .qty{ position:absolute; bottom:1px; right:2px; font-family:'Press Start 2P'; font-size:6px; color:var(--gold); text-shadow:1px 1px 0 #000;}
+  .inv-slot svg{ width:80%; height:80%; }
+  .inv-slot .qty{ position:absolute; bottom:2px; right:3px; font-family:'Press Start 2P'; font-size:13px; color:var(--gold); text-shadow:1px 1px 0 #000;}
   .inv-slot.rare{ box-shadow: inset -1px -1px 0 #000, inset 1px 1px 0 #3a3d47, 0 0 0 1px var(--gold), 0 0 10px rgba(255,210,63,0.5); animation: shimmer 2.2s infinite;}
   .inv-slot.selected{ box-shadow: inset -1px -1px 0 #000, inset 1px 1px 0 #3a3d47, 0 0 0 2px var(--signal);}
+  .equip-grid{ display:grid; grid-template-columns:repeat(6,1fr); gap:6px; }
+  .equip-slot{
+    aspect-ratio:1; background: linear-gradient(160deg,#8a8d94,#6a6d74);
+    border:2px solid #000; box-shadow: inset -1px -1px 0 rgba(0,0,0,0.3), inset 1px 1px 0 rgba(255,255,255,0.2);
+    cursor:pointer;
+  }
 
   .item-detail{ background: linear-gradient(160deg,#1c1e26,#131418); border:2px solid #000; padding:9px; display:flex; gap:9px; align-items:center; box-shadow: inset 0 0 0 1px #2c2e37;}
   .item-detail .icon{font-size:27px;}
@@ -740,7 +747,59 @@
 
         <!-- INVENTORY VIEW -->
         <div class="view" id="view-inventory">
-          <div class="section-lbl">ITEMS</div>
+          <div class="section-lbl">CHARACTER</div>
+
+          <div class="points-box">
+            <span>Available points:</span>
+            <span class="points-val" id="availablePointsVal">00</span>
+          </div>
+
+          <div class="stats-char-row">
+            <div class="stat-stack">
+              <div class="stat-pill" data-stat="hp">
+                <div class="pm-btn minus" data-stat-btn="hp" data-dir="-1">−</div>
+                <div class="stat-mid"><span class="lbl">HP</span><span class="val" id="statusHpVal">10</span></div>
+                <div class="pm-btn plus" data-stat-btn="hp" data-dir="1">+</div>
+              </div>
+              <div class="stat-pill" data-stat="energy">
+                <div class="pm-btn minus" data-stat-btn="energy" data-dir="-1">−</div>
+                <div class="stat-mid"><span class="lbl">ENR</span><span class="val" id="statusEnrVal">10</span></div>
+                <div class="pm-btn plus" data-stat-btn="energy" data-dir="1">+</div>
+              </div>
+              <div class="stat-pill" data-stat="strength">
+                <div class="pm-btn minus" data-stat-btn="strength" data-dir="-1">−</div>
+                <div class="stat-mid"><span class="lbl">STR</span><span class="val" id="statusStrVal">10</span></div>
+                <div class="pm-btn plus" data-stat-btn="strength" data-dir="1">+</div>
+              </div>
+              <div class="stat-pill" data-stat="luck">
+                <div class="pm-btn minus" data-stat-btn="luck" data-dir="-1">−</div>
+                <div class="stat-mid"><span class="lbl">LCK</span><span class="val" id="statusLckVal">10</span></div>
+                <div class="pm-btn plus" data-stat-btn="luck" data-dir="1">+</div>
+              </div>
+            </div>
+            <div class="char-preview-box" id="openCharEditorBtn">
+              <canvas id="statusCharCanvas" width="64" height="64" style="width:190px; height:190px;"></canvas>
+            </div>
+          </div>
+
+          <div id="statChangeButtons" style="display:none; gap:8px;">
+            <div class="btn cancel-btn" style="flex:1;" id="cancelStatsBtn">CANCEL CHANGES</div>
+            <div class="btn save-btn" style="flex:1;" id="saveStatsBtn">SAVE CHANGES</div>
+          </div>
+
+          <div class="btn gold full" id="editCharacterBtn">EDIT CHARACTER</div>
+
+          <div class="section-lbl" style="margin-top:10px;">EQUIPMENT</div>
+          <div class="equip-grid">
+            <div class="equip-slot" data-slot="weapon" title="Weapon"></div>
+            <div class="equip-slot" data-slot="ammo" title="Ammo"></div>
+            <div class="equip-slot" data-slot="helmet" title="Helmet"></div>
+            <div class="equip-slot" data-slot="armor" title="Armor"></div>
+            <div class="equip-slot" data-slot="pants" title="Pants"></div>
+            <div class="equip-slot" data-slot="boots" title="Boots"></div>
+          </div>
+
+          <div class="section-lbl" style="margin-top:10px;">ITEMS</div>
           <div class="inv-tabs">
             <div class="inv-tab active" data-tab="food">FOOD</div>
             <div class="inv-tab" data-tab="weapon">WEAPON</div>
@@ -773,46 +832,7 @@
               <div class="email" id="accountEmail">—</div>
             </div>
 
-            <div class="points-box">
-              <span>Available points:</span>
-              <span class="points-val" id="availablePointsVal">00</span>
-            </div>
-
-            <div class="stats-char-row">
-              <div class="stat-stack">
-                <div class="stat-pill" data-stat="hp">
-                  <div class="pm-btn minus" data-stat-btn="hp" data-dir="-1">−</div>
-                  <div class="stat-mid"><span class="lbl">HP</span><span class="val" id="statusHpVal">10</span></div>
-                  <div class="pm-btn plus" data-stat-btn="hp" data-dir="1">+</div>
-                </div>
-                <div class="stat-pill" data-stat="energy">
-                  <div class="pm-btn minus" data-stat-btn="energy" data-dir="-1">−</div>
-                  <div class="stat-mid"><span class="lbl">ENR</span><span class="val" id="statusEnrVal">10</span></div>
-                  <div class="pm-btn plus" data-stat-btn="energy" data-dir="1">+</div>
-                </div>
-                <div class="stat-pill" data-stat="strength">
-                  <div class="pm-btn minus" data-stat-btn="strength" data-dir="-1">−</div>
-                  <div class="stat-mid"><span class="lbl">STR</span><span class="val" id="statusStrVal">10</span></div>
-                  <div class="pm-btn plus" data-stat-btn="strength" data-dir="1">+</div>
-                </div>
-                <div class="stat-pill" data-stat="luck">
-                  <div class="pm-btn minus" data-stat-btn="luck" data-dir="-1">−</div>
-                  <div class="stat-mid"><span class="lbl">LCK</span><span class="val" id="statusLckVal">10</span></div>
-                  <div class="pm-btn plus" data-stat-btn="luck" data-dir="1">+</div>
-                </div>
-              </div>
-              <div class="char-preview-box" id="openCharEditorBtn">
-                <canvas id="statusCharCanvas" width="64" height="64" style="width:190px; height:190px;"></canvas>
-              </div>
-            </div>
-
-            <div id="statChangeButtons" style="display:none; gap:8px;">
-              <div class="btn cancel-btn" style="flex:1;" id="cancelStatsBtn">CANCEL CHANGES</div>
-              <div class="btn save-btn" style="flex:1;" id="saveStatsBtn">SAVE CHANGES</div>
-            </div>
-
-            <div class="btn gold full" id="editCharacterBtn">EDIT CHARACTER</div>
-            <div class="btn gold full" id="notifyBtn" style="margin-top:6px;">ENABLE NOTIFICATIONS</div>
+            <div class="btn gold full" id="notifyBtn" style="margin-top:10px;">ENABLE NOTIFICATIONS</div>
             <div class="btn outline full" id="logoutBtn" style="margin-top:6px;">LOG OUT</div>
             <div class="hint" id="saveStatusHint">Progress saves automatically.</div>
           </div>
@@ -859,7 +879,7 @@
         <div class="navitem active" data-view="shelter"><span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2a1 1 0 0 1 .64.23l7 5.83A2 2 0 0 1 20.4 10.8V20a1 1 0 0 1-1 1h-4.4a1 1 0 0 1-1-1v-4.5a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1V20a1 1 0 0 1-1 1H4.6a1 1 0 0 1-1-1v-9.2a2 2 0 0 1 .76-1.57l7-5.83A1 1 0 0 1 12 3.2Z"/><rect x="16" y="5" width="2.2" height="4.2"/></svg></span>SHELTER</div>
         <div class="navitem" data-view="mission"><span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 3 3.4 4.9A1 1 0 0 0 2.7 5.9v13.7a1 1 0 0 0 1.3 1L9 19V3Z"/><path d="M10.4 3v16l3.2 1.6V4.6L10.4 3Z"/><path d="M15 4.4v16L20.6 18.5a1 1 0 0 0 .7-1V3.8a1 1 0 0 0-1.3-1L15 4.4Z"/></svg></span>MISSION</div>
         <div class="navitem" data-view="journal"><span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="2.5" y="4" width="2.6" height="16" rx="1.3"/><path d="M8.2 4h9.3A2.5 2.5 0 0 1 20 6.5v13A2.5 2.5 0 0 1 17.5 22H10.7A2.5 2.5 0 0 1 8.2 19.5V4Z"/></svg></span>JOURNAL</div>
-        <div class="navitem" data-view="inventory"><span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 2a1 1 0 0 0-1 1v1.1A5.5 5.5 0 0 0 3.5 9.5V20a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2V9.5A5.5 5.5 0 0 0 16 3.1V3a1 1 0 0 0-1-1H9Zm1 2h4v1H10V4ZM7 12h10v2.5H7V12Z"/></svg></span>ITEMS</div>
+        <div class="navitem" data-view="inventory"><span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.5 2 4 5.5l1.8 2.7L8 7v13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V7l2.2 1.2L20 5.5 15.5 2l-1.2 2H9.7L8.5 2Z"/></svg></span>CHARACTER</div>
         <div class="navitem" data-view="status"><span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="7.5" r="4"/><path d="M4 21v-1c0-3.9 3.6-7 8-7s8 3.1 8 7v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z"/></svg></span>STATUS</div>
       </div>
 
