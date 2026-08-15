@@ -245,7 +245,7 @@
   .loot-item.unknown{ color:var(--toxic); text-shadow:0 0 8px rgba(155,95,214,0.8); animation: flicker 2s infinite; }
 
   .inv-tabs{ display:flex; gap:4px; }
-  .inv-tab{ flex:1; text-align:center; padding:8px 2px; font-family:'Press Start 2P'; font-size:7.5px; background: linear-gradient(160deg,#1c1e26,#111217); border:2px solid #000; color:var(--ash); cursor:pointer;}
+  .inv-tab{ flex:1; text-align:center; padding:8px 1px; font-family:'Press Start 2P'; font-size:6.5px; background: linear-gradient(160deg,#1c1e26,#111217); border:2px solid #000; color:var(--ash); cursor:pointer;}
   .inv-tab.active{ background: linear-gradient(160deg,var(--ember-dark),#3a0f06); color:var(--ember-hot); box-shadow: inset 0 0 8px rgba(255,106,61,0.3);}
   .inv-grid{ display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:6px; background:#0a0b0d; border:2px solid #000; padding:9px; box-shadow: inset 0 0 20px rgba(0,0,0,0.6);}
   .inv-slot{ aspect-ratio:1; background: linear-gradient(160deg,#20222b,#141519); border:2px solid #000; box-shadow: inset -1px -1px 0 #000, inset 1px 1px 0 #3a3d47; display:flex; align-items:center; justify-content:center; font-size:44px; position:relative; cursor:pointer;}
@@ -258,8 +258,10 @@
   .equip-slot{
     aspect-ratio:1; background: linear-gradient(160deg,#8a8d94,#6a6d74);
     border:2px solid #000; box-shadow: inset -1px -1px 0 rgba(0,0,0,0.3), inset 1px 1px 0 rgba(255,255,255,0.2);
-    cursor:pointer; padding:4px;
+    cursor:pointer; padding:4px; box-sizing:border-box;
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
   }
+  .equip-slot img{ width:100%; height:100%; object-fit:contain; display:block; }
   .equip-slot.filled{ background: linear-gradient(160deg,#20222b,#141519); box-shadow: inset -1px -1px 0 #000, inset 1px 1px 0 #3a3d47, 0 0 8px rgba(78,230,168,0.3); }
 
   .item-detail{ background: linear-gradient(160deg,#1c1e26,#131418); border:2px solid #000; padding:9px; display:flex; gap:9px; align-items:center; box-shadow: inset 0 0 0 1px #2c2e37;}
@@ -807,6 +809,7 @@
             <div class="inv-tab active" data-tab="food">FOOD</div>
             <div class="inv-tab" data-tab="weapon">WEAPON</div>
             <div class="inv-tab" data-tab="medical">MEDICAL</div>
+            <div class="inv-tab" data-tab="gear">GEAR</div>
             <div class="inv-tab" data-tab="parts">PARTS</div>
           </div>
 
@@ -1080,6 +1083,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       medical: [
         {icon:'🩹', qty:2, name:'BANDAGE', rarity:'COMMON'},
       ],
+      gear: [],
       parts: [],
     }
   };
@@ -1771,6 +1775,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     document.getElementById('luckVal').textContent = playerState.luck;
     document.getElementById('radioBarFill').style.width = playerState.radio_progress + '%';
     inventoryData = playerState.inventory || DEFAULT_STATE.inventory;
+    if(!inventoryData.gear) inventoryData.gear = [];
     // Self-heal any icon saved before we switched from emoji to the SVG bottle icon
     const BOTTLE_ICON_SVG = '<svg width="30" height="30" viewBox="0 0 24 24" style="display:block;"><rect x="9" y="1" width="6" height="2" fill="#9fe0ff"/><rect x="8" y="3" width="8" height="3" fill="#5ab8e8"/><path d="M7 6h10v3l1 2v11a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V11l1-2V6z" fill="#3a92c9" stroke="#0d3a52" stroke-width="1"/><rect x="6.5" y="13" width="11" height="7" fill="#7dd0f5"/><rect x="6.5" y="13" width="11" height="1.5" fill="#0d3a52"/></svg>';
     Object.values(inventoryData).forEach(catItems => {
@@ -2334,7 +2339,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       ],
       loot: [ {icon:'🥫', qty:2, name:'CANNED FOOD', rarity:'COMMON', cat:'food'},
               {icon:'🩹', qty:1, name:'BANDAGE', rarity:'COMMON', cat:'medical'} ,
-              {icon:'<img src="equip_icons/armor_a_helmet.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'SCRAP HELMET', rarity:'★ EQUIPMENT — SET A', cat:'parts', rare:true, itemId:'ARMOR_A_HELMET'}],
+              {icon:'<img src="equip_icons/armor_a_helmet.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'SCRAP HELMET', rarity:'★ EQUIPMENT — SET A', cat:'gear', rare:true, itemId:'ARMOR_A_HELMET'}],
     },
     {
       id: 'pharmacy', zone:'shelter', name: 'RUINED PHARMACY', level: 5, duration_seconds: 30, xp: 35,
@@ -2361,7 +2366,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
               {icon:'🔧', qty:2, name:'TOOL KIT', rarity:'COMMON', cat:'parts'},
               {icon:'📟', qty:1, name:'RADIO CHIP', rarity:'★ RARE — REPAIRS THE FAMILY RADIO', cat:'parts', rare:true} ,
               {icon:'<img src="equip_icons/weapon_machete.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'MACHETE', rarity:'★ EQUIPMENT — MELEE WEAPON', cat:'weapon', rare:true, itemId:'WEAPON_MACHETE'},
-              {icon:'<img src="equip_icons/armor_a_vest.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'SCRAP VEST', rarity:'★ EQUIPMENT — SET A', cat:'parts', rare:true, itemId:'ARMOR_A_VEST'}],
+              {icon:'<img src="equip_icons/armor_a_vest.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'SCRAP VEST', rarity:'★ EQUIPMENT — SET A', cat:'gear', rare:true, itemId:'ARMOR_A_VEST'}],
     },
     {
       id: 'depot', zone:'shelter', name: 'MILITARY DEPOT', level: 15, duration_seconds: 45, xp: 60,
@@ -2378,7 +2383,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
               {icon:'📟', qty:1, name:'RADIO CHIP', rarity:'★ RARE — REPAIRS THE FAMILY RADIO', cat:'parts', rare:true} ,
               {icon:'<img src="equip_icons/weapon_pistol.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'PISTOL', rarity:'★ EQUIPMENT — RANGED WEAPON', cat:'weapon', rare:true, itemId:'WEAPON_PISTOL'},
               {icon:'<img src="equip_icons/ammo_pistol.png" style="width:100%;height:100%;object-fit:contain;">', qty:6, name:'PISTOL BULLETS', rarity:'★ EQUIPMENT — AMMO', cat:'weapon', rare:true, itemId:'AMMO_PISTOL'},
-              {icon:'<img src="equip_icons/armor_a_pants.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'SCRAP PANTS', rarity:'★ EQUIPMENT — SET A', cat:'parts', rare:true, itemId:'ARMOR_A_PANTS'}],
+              {icon:'<img src="equip_icons/armor_a_pants.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'SCRAP PANTS', rarity:'★ EQUIPMENT — SET A', cat:'gear', rare:true, itemId:'ARMOR_A_PANTS'}],
     },
 
     // ---------------- THE ROOTS (hills/farmland, LV 16-28) ----------------
@@ -2393,7 +2398,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       ],
       loot: [ {icon:'🌿', qty:2, name:'HERBAL REMEDY', rarity:'UNCOMMON', cat:'medical'},
               {icon:'🥫', qty:1, name:'CANNED FOOD', rarity:'COMMON', cat:'food'} ,
-              {icon:'<img src="equip_icons/armor_a_boots.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'SCRAP BOOTS', rarity:'★ EQUIPMENT — SET A', cat:'parts', rare:true, itemId:'ARMOR_A_BOOTS'}],
+              {icon:'<img src="equip_icons/armor_a_boots.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'SCRAP BOOTS', rarity:'★ EQUIPMENT — SET A', cat:'gear', rare:true, itemId:'ARMOR_A_BOOTS'}],
     },
     {
       id: 'windmill', zone:'roots', name: 'THE OLD WINDMILL', level: 19, duration_seconds: 55, xp: 80,
@@ -2456,7 +2461,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       ],
       loot: [ {icon:'🔩', qty:1, name:'SCRAP METAL', rarity:'COMMON', cat:'parts'},
               {icon:'🩹', qty:1, name:'BANDAGE', rarity:'COMMON', cat:'medical'} ,
-              {icon:'<img src="equip_icons/armor_c_helmet.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'GAS MASK HELMET', rarity:'★ EQUIPMENT — SET C', cat:'parts', rare:true, itemId:'ARMOR_C_HELMET'}],
+              {icon:'<img src="equip_icons/armor_c_helmet.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'GAS MASK HELMET', rarity:'★ EQUIPMENT — SET C', cat:'gear', rare:true, itemId:'ARMOR_C_HELMET'}],
     },
     {
       id: 'silentblock', zone:'faceless', name: 'THE SILENT BLOCK', level: 20, duration_seconds: 55, xp: 85,
@@ -2469,7 +2474,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       ],
       loot: [ {icon:'🔩', qty:2, name:'SCRAP METAL', rarity:'COMMON', cat:'parts'},
               {icon:'💊', qty:1, name:'ANTIBIOTIC', rarity:'UNCOMMON', cat:'medical'} ,
-              {icon:'<img src="equip_icons/armor_c_vest.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'GAS MASK VEST', rarity:'★ EQUIPMENT — SET C', cat:'parts', rare:true, itemId:'ARMOR_C_VEST'}],
+              {icon:'<img src="equip_icons/armor_c_vest.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'GAS MASK VEST', rarity:'★ EQUIPMENT — SET C', cat:'gear', rare:true, itemId:'ARMOR_C_VEST'}],
     },
     {
       id: 'rooftop', zone:'faceless', name: 'ROOFTOP STASH', level: 23, duration_seconds: 60, xp: 95,
@@ -2483,7 +2488,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       loot: [ {icon:'🥫', qty:1, name:'CANNED FOOD', rarity:'COMMON', cat:'food'},
               {icon:'🔩', qty:1, name:'SCRAP METAL', rarity:'COMMON', cat:'parts'},
               {icon:'🎭', qty:1, name:'MASK FRAGMENT', rarity:'★ RARE — FACELESS TRUST', cat:'parts', rare:true} ,
-              {icon:'<img src="equip_icons/armor_c_pants.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'GAS MASK PANTS', rarity:'★ EQUIPMENT — SET C', cat:'parts', rare:true, itemId:'ARMOR_C_PANTS'}],
+              {icon:'<img src="equip_icons/armor_c_pants.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'GAS MASK PANTS', rarity:'★ EQUIPMENT — SET C', cat:'gear', rare:true, itemId:'ARMOR_C_PANTS'}],
     },
     {
       id: 'subway', zone:'faceless', name: 'SUBWAY ENTRANCE', level: 26, duration_seconds: 65, xp: 105,
@@ -2496,7 +2501,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       ],
       loot: [ {icon:'🔩', qty:2, name:'SCRAP METAL', rarity:'COMMON', cat:'parts'},
               {icon:'🎭', qty:1, name:'MASK FRAGMENT', rarity:'★ RARE — FACELESS TRUST', cat:'parts', rare:true} ,
-              {icon:'<img src="equip_icons/armor_c_boots.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'GAS MASK BOOTS', rarity:'★ EQUIPMENT — SET C', cat:'parts', rare:true, itemId:'ARMOR_C_BOOTS'}],
+              {icon:'<img src="equip_icons/armor_c_boots.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'GAS MASK BOOTS', rarity:'★ EQUIPMENT — SET C', cat:'gear', rare:true, itemId:'ARMOR_C_BOOTS'}],
     },
     {
       id: 'maskzero', zone:'faceless', name: "MASK ZERO'S TERRITORY", level: 30, duration_seconds: 75, xp: 130,
@@ -2525,7 +2530,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       ],
       loot: [ {icon:'🔌', qty:1, name:'ELECTRONIC COMPONENT', rarity:'UNCOMMON', cat:'parts'},
               {icon:'🥫', qty:1, name:'CANNED FOOD', rarity:'COMMON', cat:'food'} ,
-              {icon:'<img src="equip_icons/armor_b_helmet.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'MILITARY HELMET', rarity:'★ EQUIPMENT — SET B', cat:'parts', rare:true, itemId:'ARMOR_B_HELMET'}],
+              {icon:'<img src="equip_icons/armor_b_helmet.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'MILITARY HELMET', rarity:'★ EQUIPMENT — SET B', cat:'gear', rare:true, itemId:'ARMOR_B_HELMET'}],
     },
     {
       id: 'warehouse', zone:'beacon', name: 'DOCKSIDE WAREHOUSE', level: 21, duration_seconds: 55, xp: 88,
@@ -2540,7 +2545,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
               {icon:'⚙️', qty:1, name:'MOTOR PART', rarity:'UNCOMMON', cat:'parts'} ,
               {icon:'<img src="equip_icons/weapon_shotgun.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'SHOTGUN', rarity:'★ EQUIPMENT — RANGED WEAPON', cat:'weapon', rare:true, itemId:'WEAPON_SHOTGUN'},
               {icon:'<img src="equip_icons/ammo_shotgun.png" style="width:100%;height:100%;object-fit:contain;">', qty:6, name:'SHOTGUN SHELLS', rarity:'★ EQUIPMENT — AMMO', cat:'weapon', rare:true, itemId:'AMMO_SHOTGUN'},
-              {icon:'<img src="equip_icons/armor_b_vest.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'MILITARY VEST', rarity:'★ EQUIPMENT — SET B', cat:'parts', rare:true, itemId:'ARMOR_B_VEST'}],
+              {icon:'<img src="equip_icons/armor_b_vest.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'MILITARY VEST', rarity:'★ EQUIPMENT — SET B', cat:'gear', rare:true, itemId:'ARMOR_B_VEST'}],
     },
     {
       id: 'crane', zone:'beacon', name: 'THE OLD CRANE', level: 24, duration_seconds: 60, xp: 98,
@@ -2553,7 +2558,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       ],
       loot: [ {icon:'🔌', qty:1, name:'ELECTRONIC COMPONENT', rarity:'UNCOMMON', cat:'parts'},
               {icon:'☕', qty:1, name:'COFFEE', rarity:'★ RARE — ENERGY BOOST', cat:'food', rare:true} ,
-              {icon:'<img src="equip_icons/armor_b_pants.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'MILITARY PANTS', rarity:'★ EQUIPMENT — SET B', cat:'parts', rare:true, itemId:'ARMOR_B_PANTS'}],
+              {icon:'<img src="equip_icons/armor_b_pants.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'MILITARY PANTS', rarity:'★ EQUIPMENT — SET B', cat:'gear', rare:true, itemId:'ARMOR_B_PANTS'}],
     },
     {
       id: 'factoryfloor', zone:'beacon', name: 'FACTORY FLOOR', level: 27, duration_seconds: 65, xp: 108,
@@ -2566,7 +2571,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       ],
       loot: [ {icon:'🔌', qty:2, name:'ELECTRONIC COMPONENT', rarity:'UNCOMMON', cat:'parts'},
               {icon:'🔧', qty:1, name:'TOOL KIT', rarity:'COMMON', cat:'parts'} ,
-              {icon:'<img src="equip_icons/armor_b_boots.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'MILITARY BOOTS', rarity:'★ EQUIPMENT — SET B', cat:'parts', rare:true, itemId:'ARMOR_B_BOOTS'}],
+              {icon:'<img src="equip_icons/armor_b_boots.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'MILITARY BOOTS', rarity:'★ EQUIPMENT — SET B', cat:'gear', rare:true, itemId:'ARMOR_B_BOOTS'}],
     },
     {
       id: 'workshop', zone:'beacon', name: "MARCUS'S WORKSHOP RUN", level: 30, duration_seconds: 75, xp: 125,
@@ -2593,7 +2598,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       ],
       loot: [ {icon:'📟', qty:1, name:'RADIO CHIP', rarity:'★ RARE — REPAIRS THE FAMILY RADIO', cat:'parts', rare:true},
               {icon:'🔌', qty:1, name:'ELECTRONIC COMPONENT', rarity:'UNCOMMON', cat:'parts'} ,
-              {icon:'<img src="equip_icons/armor_e_helmet.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'ADVANCED HELMET', rarity:'★ EQUIPMENT — SET E', cat:'parts', rare:true, itemId:'ARMOR_E_HELMET'}],
+              {icon:'<img src="equip_icons/armor_e_helmet.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'ADVANCED HELMET', rarity:'★ EQUIPMENT — SET E', cat:'gear', rare:true, itemId:'ARMOR_E_HELMET'}],
     },
     {
       id: 'bridgecrossing', zone:'radio', name: 'THE BRIDGE CROSSING', level: 30, duration_seconds: 80, xp: 140,
@@ -2606,7 +2611,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       ],
       loot: [ {icon:'📟', qty:1, name:'RADIO CHIP', rarity:'★ RARE — REPAIRS THE FAMILY RADIO', cat:'parts', rare:true},
               {icon:'🥫', qty:1, name:'CANNED FOOD', rarity:'COMMON', cat:'food'} ,
-              {icon:'<img src="equip_icons/armor_e_vest.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'ADVANCED VEST', rarity:'★ EQUIPMENT — SET E', cat:'parts', rare:true, itemId:'ARMOR_E_VEST'}],
+              {icon:'<img src="equip_icons/armor_e_vest.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'ADVANCED VEST', rarity:'★ EQUIPMENT — SET E', cat:'gear', rare:true, itemId:'ARMOR_E_VEST'}],
     },
     {
       id: 'staticfield', zone:'radio', name: 'STATIC FIELD', level: 35, duration_seconds: 90, xp: 160,
@@ -2619,7 +2624,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       ],
       loot: [ {icon:'📟', qty:1, name:'RADIO CHIP', rarity:'★ RARE — REPAIRS THE FAMILY RADIO', cat:'parts', rare:true},
               {icon:'💊', qty:1, name:'ANTIBIOTIC', rarity:'UNCOMMON', cat:'medical'} ,
-              {icon:'<img src="equip_icons/armor_e_pants.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'ADVANCED PANTS', rarity:'★ EQUIPMENT — SET E', cat:'parts', rare:true, itemId:'ARMOR_E_PANTS'}],
+              {icon:'<img src="equip_icons/armor_e_pants.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'ADVANCED PANTS', rarity:'★ EQUIPMENT — SET E', cat:'gear', rare:true, itemId:'ARMOR_E_PANTS'}],
     },
     {
       id: 'beneathtower', zone:'radio', name: 'BENEATH THE TOWER', level: 40, duration_seconds: 100, xp: 190,
@@ -2632,7 +2637,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       ],
       loot: [ {icon:'📟', qty:1, name:'RADIO CHIP', rarity:'★ RARE — REPAIRS THE FAMILY RADIO', cat:'parts', rare:true},
               {icon:'🔌', qty:2, name:'ELECTRONIC COMPONENT', rarity:'UNCOMMON', cat:'parts'} ,
-              {icon:'<img src="equip_icons/armor_e_boots.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'ADVANCED BOOTS', rarity:'★ EQUIPMENT — SET E', cat:'parts', rare:true, itemId:'ARMOR_E_BOOTS'}],
+              {icon:'<img src="equip_icons/armor_e_boots.png" style="width:100%;height:100%;object-fit:contain;">', qty:1, name:'ADVANCED BOOTS', rarity:'★ EQUIPMENT — SET E', cat:'gear', rare:true, itemId:'ARMOR_E_BOOTS'}],
     },
     {
       id: 'lastfrequency', zone:'radio', name: 'LAST FREQUENCY', level: 45, duration_seconds: 120, xp: 250,
@@ -3179,7 +3184,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     const equip = getEquipment();
     const itemId = equip[slotKey];
     if(!itemId) return;
-    const catName = slotKey === 'weapon' ? 'weapon' : slotKey === 'ammo' ? 'weapon' : 'parts';
+    const catName = slotKey === 'weapon' ? 'weapon' : slotKey === 'ammo' ? 'weapon' : 'gear';
     addToInventory(catName, itemId, 1);
     equip[slotKey] = null;
     queueSave();
