@@ -247,14 +247,14 @@
   .inv-tabs{ display:flex; gap:4px; }
   .inv-tab{ flex:1; text-align:center; padding:8px 2px; font-family:'Press Start 2P'; font-size:7.5px; background: linear-gradient(160deg,#1c1e26,#111217); border:2px solid #000; color:var(--ash); cursor:pointer;}
   .inv-tab.active{ background: linear-gradient(160deg,var(--ember-dark),#3a0f06); color:var(--ember-hot); box-shadow: inset 0 0 8px rgba(255,106,61,0.3);}
-  .inv-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:6px; background:#0a0b0d; border:2px solid #000; padding:9px; box-shadow: inset 0 0 20px rgba(0,0,0,0.6);}
+  .inv-grid{ display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:6px; background:#0a0b0d; border:2px solid #000; padding:9px; box-shadow: inset 0 0 20px rgba(0,0,0,0.6);}
   .inv-slot{ aspect-ratio:1; background: linear-gradient(160deg,#20222b,#141519); border:2px solid #000; box-shadow: inset -1px -1px 0 #000, inset 1px 1px 0 #3a3d47; display:flex; align-items:center; justify-content:center; font-size:44px; position:relative; cursor:pointer;}
   .inv-slot.empty{ opacity:0.2; cursor:default; }
   .inv-slot svg{ width:80%; height:80%; }
   .inv-slot .qty{ position:absolute; bottom:2px; right:3px; font-family:'Press Start 2P'; font-size:13px; color:var(--gold); text-shadow:1px 1px 0 #000;}
   .inv-slot.rare{ box-shadow: inset -1px -1px 0 #000, inset 1px 1px 0 #3a3d47, 0 0 0 1px var(--gold), 0 0 10px rgba(255,210,63,0.5); animation: shimmer 2.2s infinite;}
   .inv-slot.selected{ box-shadow: inset -1px -1px 0 #000, inset 1px 1px 0 #3a3d47, 0 0 0 2px var(--signal);}
-  .equip-grid{ display:grid; grid-template-columns:repeat(6,1fr); gap:6px; }
+  .equip-grid{ display:grid; grid-template-columns:repeat(6, minmax(0,1fr)); gap:6px; background:#0a0b0d; border:2px solid #000; padding:9px; box-shadow: inset 0 0 20px rgba(0,0,0,0.6);}
   .equip-slot{
     aspect-ratio:1; background: linear-gradient(160deg,#8a8d94,#6a6d74);
     border:2px solid #000; box-shadow: inset -1px -1px 0 rgba(0,0,0,0.3), inset 1px 1px 0 rgba(255,255,255,0.2);
