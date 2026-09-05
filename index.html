@@ -233,8 +233,19 @@
     font-family:'VT323', monospace; font-size:18px; color:#8ef0a8;
     line-height:1.4; text-shadow:0 0 4px rgba(142,240,168,0.4);
   }
+  .narrative-box-big{ min-height:220px; font-size:20px; line-height:1.5; }
   .narrative-cursor{ animation: blinkCursor 0.8s steps(1) infinite; color:#8ef0a8; }
   @keyframes blinkCursor{ 50%{ opacity:0; } }
+  .mission-hud{
+    display:flex; align-items:center; gap:8px; margin-top:8px;
+    background:#0a0b0d; border:2px solid #000; padding:8px 10px; box-shadow: inset 0 0 0 1px #2a2c34;
+  }
+  .hud-stat{ display:flex; align-items:baseline; gap:5px; }
+  .hud-lbl{ font-family:'Press Start 2P'; font-size:8px; color:var(--ash); }
+  .hud-val{ font-family:'Press Start 2P'; font-size:13px; color:var(--bone); }
+  .hud-weapon{ margin-left:auto; display:flex; align-items:center; gap:6px; }
+  .hud-weapon-icon{ width:26px; height:26px; background:#181a20; border:1px solid #333; display:flex; align-items:center; justify-content:center; }
+  .hud-ammo{ font-family:'Press Start 2P'; font-size:11px; color:var(--gold); }
   .progress-bg{background:#000; border:2px solid #000; height:16px; margin-bottom:9px; position:relative; box-shadow: inset 0 0 0 1px #2a2a2a;}
   .progress-fill{ background: repeating-linear-gradient(45deg, var(--signal) 0 8px, var(--signal-dark) 8px 16px); background-size: 32px 32px; height:100%; width:0%; animation: stripes 1s linear infinite; box-shadow: 0 0 10px rgba(78,230,168,0.5); transition: width 0.3s linear;}
   .risk-alert{ border:2px dashed var(--blood); padding:7px 9px; font-size:14px; color:#ffb3b3; display:flex; align-items:center; gap:7px; animation: pulse-danger 1.1s infinite; text-shadow:0 0 6px rgba(232,59,59,0.6); display:none;}
@@ -723,8 +734,15 @@
                 <span class="name" id="activeMissionName">—</span>
                 <span class="lvl" id="activeMissionLvl">LV —</span>
               </div>
-              <img class="mission-scene-img" id="activeMissionImg" src="" alt="">
-              <div class="desc" id="activeMissionDesc">—</div>
+
+              <div class="mission-hud">
+                <div class="hud-stat"><span class="hud-lbl">HP</span><span class="hud-val" id="hudHp">—</span></div>
+                <div class="hud-stat"><span class="hud-lbl">ENR</span><span class="hud-val" id="hudEnergy">—</span></div>
+                <div class="hud-weapon">
+                  <div class="hud-weapon-icon" id="hudWeaponIcon"></div>
+                  <span class="hud-ammo" id="hudAmmoText">—</span>
+                </div>
+              </div>
 
               <div class="timer-block">
                 <div class="time" id="timerDisplay">00:00:00</div>
@@ -733,9 +751,9 @@
 
               <div class="progress-bg"><div class="progress-fill" id="progressFill"></div></div>
 
-              <div class="narrative-box" id="narrativeBox"><span id="narrativeText"></span><span class="narrative-cursor">▌</span></div>
+              <div class="narrative-box narrative-box-big" id="narrativeBox"><span id="narrativeText"></span><span class="narrative-cursor">▌</span></div>
 
-              <div class="risk-alert" id="riskAlert">⚠ CRACKED ASHEN DETECTED NEARBY</div>
+              <div class="risk-alert" id="encounterAlert">⚠ ENEMY DETECTED</div>
             </div>
 
             <div>
@@ -751,6 +769,7 @@
           </div>
 
         </div>
+
 
         <!-- INVENTORY VIEW -->
         <div class="view" id="view-inventory">
@@ -1757,6 +1776,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     playerState.recipes_unlocked = playerState.recipes_unlocked || { vitality:false, strength:false, energy:false, luck:false };
     playerState.faction_reputation = playerState.faction_reputation || { beacon:50, roots:50, faceless:50 };
     playerState.equipment = playerState.equipment || { weapon:null, ammo:null, helmet:null, vest:null, pants:null, boots:null };
+    playerState.last_rest_day = playerState.last_rest_day ?? 0;
     playerState.inventory = playerState.inventory || DEFAULT_STATE.inventory;
     playerState.notify_at = playerState.notify_at ?? null;
     playerState.notified = playerState.notified ?? true;
@@ -1865,6 +1885,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         recipes_unlocked: playerState.recipes_unlocked,
         faction_reputation: playerState.faction_reputation,
         equipment: playerState.equipment,
+        last_rest_day: playerState.last_rest_day,
         inventory: playerState.inventory,
         active_mission: playerState.active_mission,
         notify_at: playerState.notify_at,
@@ -2021,9 +2042,27 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         openMapScreen();
         return;
       }
+      if(room.dataset.room === 'Bed'){
+        restEnergy();
+        return;
+      }
       showToast(room.dataset.room.toUpperCase() + ' ROOM SELECTED');
     });
   });
+
+  function restEnergy(){
+    if(!playerState) return;
+    playerState.last_rest_day = playerState.last_rest_day || 0;
+    if(playerState.last_rest_day >= playerState.day){
+      showToast('ALREADY RESTED TODAY — COME BACK TOMORROW');
+      return;
+    }
+    playerState.energy += 50;
+    playerState.last_rest_day = playerState.day;
+    queueSave();
+    resetStatEditor();
+    showToast('+50 ENERGY — WELL RESTED');
+  }
 
   // =========================================================
   // FAMILY RADIO — signal fragments unlocked as it's repaired
@@ -2769,14 +2808,21 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
 
     document.getElementById('activeMissionName').textContent = mission.name;
     document.getElementById('activeMissionLvl').textContent = 'LV ' + mission.level;
-    document.getElementById('activeMissionDesc').textContent = mission.desc;
-    document.getElementById('activeMissionImg').src = mission.image || '';
     document.getElementById('missionActions').style.display = 'flex';
-    document.getElementById('riskAlert').classList.remove('show');
+    document.getElementById('encounterAlert').classList.remove('show');
+    updateMissionHud();
 
-    narrativeShownIndex = -1;
+    missionHadFight = false;
+    missionForcedRetreat = false;
+    currentEncounterKind = null;
+    currentEncounterEnemy = null;
+    encounterRolled = false;
+    encounterActive = false;
+
+    const nd = MISSION_NARRATIVES[mission.id];
+    const openingLine = nd ? randomFrom(nd.clear) : mission.desc;
     document.getElementById('narrativeText').textContent = '';
-    revealNextNarrativeLine(mission, 0);
+    typewriteLine(openingLine);
 
     const lootPreview = document.getElementById('lootPreview');
     lootPreview.innerHTML = '';
@@ -2791,8 +2837,9 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
   }
 
   // ---------- Typewriter narrative during missions ----------
-  let narrativeShownIndex = -1;
   let typewriterTimer = null;
+  let encounterRolled = false;
+  let encounterActive = false;
 
   function typewriteLine(text){
     clearInterval(typewriterTimer);
@@ -2806,25 +2853,24 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     }, 28);
   }
 
-  function revealNextNarrativeLine(mission, progressPct){
-    const lines = mission.narrative;
-    if(!lines || !lines.length) return;
-    // Line 0 at start, line 1 around 40%, line 2 around 75%, spread evenly if more/fewer lines
-    const thresholds = lines.map((_, i) => Math.round((i / lines.length) * 100));
-    let targetIndex = narrativeShownIndex;
-    thresholds.forEach((t, i) => { if(progressPct >= t) targetIndex = i; });
-    if(targetIndex > narrativeShownIndex){
-      narrativeShownIndex = targetIndex;
-      typewriteLine(lines[targetIndex]);
-    }
+  function triggerEncounter(mission){
+    const nd = MISSION_NARRATIVES[mission.id];
+    if(!nd) return;
+    const kind = rollEncounter(mission);
+    if(!kind) return;
+    const entry = nd[kind];
+    if(!entry || !entry.enemy) return;
+    encounterActive = true;
+    showEncounterPrompt(kind, entry.enemy, entry.text);
   }
 
   function runMissionTimer(mission, elapsedSecondsAtStart){
     clearInterval(missionInterval);
     const total = mission.duration_seconds;
-    let riskShown = false;
 
     function tick(){
+      if(encounterActive) return; // frozen on the encounter prompt until resolved
+
       const startedAt = new Date(playerState.active_mission.started_at).getTime();
       const elapsed = (Date.now() - startedAt) / 1000;
       const remaining = total - elapsed;
@@ -2832,14 +2878,13 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
 
       document.getElementById('progressFill').style.width = progressPct + '%';
       document.getElementById('timerDisplay').textContent = formatTime(Math.max(0,remaining));
-      revealNextNarrativeLine(mission, progressPct);
 
-      if(!riskShown && elapsed >= total/2){
-        document.getElementById('riskAlert').classList.add('show');
-        riskShown = true;
+      if(!encounterRolled && elapsed >= total * 0.5){
+        encounterRolled = true;
+        triggerEncounter(mission);
       }
 
-      if(remaining <= 0){
+      if(remaining <= 0 && !encounterActive){
         clearInterval(missionInterval);
         completeMission(mission);
       }
@@ -2919,32 +2964,59 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
   });
 
   function completeMission(mission){
-    const obtained = grantLoot(mission, 1);
-    const xpResult = grantXP(mission.xp);
-    finalizeMissionState();
-    showMissionResult(xpResult.leveledUp ? 'MISSION COMPLETE — LEVEL UP!' : 'MISSION COMPLETE', obtained, mission.xp);
+    const closingLine = missionHadFight ? randomFrom(CLOSING_LINES_AFTER_FIGHT) : randomFrom(CLOSING_LINES_CLEAR);
+    typewriteLine(closingLine);
+    setTimeout(() => {
+      const obtained = grantLoot(mission, 1);
+      const xpResult = grantXP(mission.xp);
+      finalizeMissionState();
+      showMissionResult(xpResult.leveledUp ? 'MISSION COMPLETE — LEVEL UP!' : 'MISSION COMPLETE', obtained, mission.xp);
+    }, 1400);
   }
 
-  document.getElementById('fightBtn').addEventListener('click', () => {
-    showToast('ASHEN DEFEATED — CONTINUING MISSION');
-    document.getElementById('riskAlert').classList.remove('show');
-  });
-
-  document.getElementById('retreatBtn').addEventListener('click', () => {
+  function endMissionEarly(reasonLine, forced){
     if(!playerState || !playerState.active_mission) return;
     clearInterval(missionInterval);
     const mission = getMissionById(playerState.active_mission.id);
     const startedAt = new Date(playerState.active_mission.started_at).getTime();
     const elapsed = (Date.now() - startedAt) / 1000;
     const fraction = Math.min(1, elapsed / mission.duration_seconds);
-    const obtained = grantLoot(mission, fraction);
-    const xpAmount = Math.round(mission.xp * fraction);
-    const xpResult = grantXP(xpAmount);
-    finalizeMissionState();
-    showMissionResult(
-      (xpResult.leveledUp ? 'LEVEL UP! — ' : '') + 'RETREATED — ' + Math.round(fraction*100) + '% RECOVERED',
-      obtained, xpAmount
-    );
+
+    typewriteLine(reasonLine);
+    document.getElementById('encounterAlert').classList.remove('show');
+
+    setTimeout(() => {
+      const obtained = grantLoot(mission, fraction);
+      const xpAmount = Math.round(mission.xp * fraction);
+      const xpResult = grantXP(xpAmount);
+      finalizeMissionState();
+      showMissionResult(
+        (xpResult.leveledUp ? 'LEVEL UP! — ' : '') + (forced ? 'FORCED RETREAT — ' : 'RETREATED — ') + Math.round(fraction*100) + '% RECOVERED',
+        obtained, xpAmount
+      );
+    }, 1400);
+  }
+
+  document.getElementById('fightBtn').addEventListener('click', () => {
+    if(!currentEncounterEnemy){
+      showToast('NOTHING TO FIGHT RIGHT NOW');
+      return;
+    }
+    const won = resolveFight(currentEncounterEnemy);
+    updateMissionHud();
+    if(won){
+      showToast(currentEncounterEnemy + ' DEALT WITH');
+      document.getElementById('encounterAlert').classList.remove('show');
+      currentEncounterEnemy = null;
+      currentEncounterKind = null;
+      encounterActive = false;
+    } else {
+      endMissionEarly(randomFrom(CLOSING_LINES_RETREAT), true);
+    }
+  });
+
+  document.getElementById('retreatBtn').addEventListener('click', () => {
+    endMissionEarly(randomFrom(CLOSING_LINES_RETREAT), false);
   });
 
   // Resume an active mission after page reload / re-login
@@ -3220,6 +3292,168 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       if(getEquipment()[slot]) unequipSlot(slot);
     });
   });
+
+
+const MISSION_NARRATIVES = {"farmhouse": {"clear": ["The gate creaks but holds. I peer through the window first \u2014 nothing moving inside, just dust hanging in the light. Slipping in through the side door, boots quiet on the porch boards.", "Front door's already hanging open. I wait a moment at the threshold, listening for anything that isn't wind. Nothing. The kitchen's been picked over but the pantry latch is still down \u2014 whoever came through before missed it."], "human": {"text": "Someone's already inside. A shape by the stove turns toward the sound of my footstep before I can back out of the doorway. Too late to pretend I'm not here.", "enemy": "FACELESS SCOUT"}, "zombie": {"text": "Something shifts behind the pantry door \u2014 slow, uneven, wrong. It hasn't noticed me yet, but the floorboard under my foot just did.", "enemy": "COMMON ASHEN"}, "special": {"text": "A low electronic crackle comes from the upstairs hallway, too rhythmic to be static, too deliberate to be wind through wires. Something up there is listening for me.", "enemy": "ANTENNA ASHEN"}}, "market": {"clear": ["The front windows are long gone, glass ground into the tile like sand. Shelves are mostly bare, but \"mostly\" isn't \"all\" \u2014 the back stockroom door is still bolted from the inside, which means somebody locked it on purpose and never came back.", "Registers are cracked open, cash long since worthless and scattered across the floor. I step over it toward the shelving nobody bothered to check twice. Second and third looters rarely check the same spots the first one didn't bother with."], "human": {"text": "A shopping cart rattles two aisles over \u2014 too steady to be the wind pushing it. I duck behind the endcap display just as a shape passes the gap in the shelves, scanning the same aisle I need.", "enemy": "FACELESS SCOUT"}, "zombie": {"text": "A low moan echoes off the tile from somewhere near the frozen aisle, magnified by the empty space. I can't tell how close until the freezer door creaks open on its own.", "enemy": "COMMON ASHEN"}, "special": {"text": "The intercom system overhead lets out a burst of static that shouldn't still have power running to it. Somewhere near the registers, something is humming along with the frequency.", "enemy": "ANTENNA ASHEN"}}, "pharmacy": {"clear": ["Glass crunches under every step no matter how carefully I place my feet. Most of the bottles on the floor are empty, expired, or both \u2014 but there's a sealed case behind the counter that nobody's touched yet, tucked where the register used to block the view.", "The neon sign out front is dead, but the fluorescents inside flicker weakly on backup power. Enough light to read labels without a flashlight, which almost makes this feel routine. I move fast anyway. Routine gets people killed out here."], "human": {"text": "A shadow passes across the frosted glass of the back office door, pausing right where the light catches it. Whoever's back there is being careful too \u2014 which means they already know someone else is in the building.", "enemy": "FACELESS SCOUT"}, "zombie": {"text": "A shelf topples somewhere in the next aisle, bottles scattering across the tile in a rhythm too erratic to be gravity alone. Something's moving through the wreckage, and it's moving toward the noise I just made.", "enemy": "COMMON ASHEN"}, "special": {"text": "The pharmacy's old paging system crackles to life without anyone touching it, spitting fragments of static in a pattern that repeats every few seconds. Wires that shouldn't be exposed are hanging loose near the ceiling tiles, twitching faintly.", "enemy": "ANTENNA ASHEN"}}, "garage": {"clear": ["Oil stains map the floor like old bruises, dried dark years ago. Whoever worked here left mid-shift and never came back \u2014 a wrench still sitting on the bike's frame like they just set it down for a second. The toolbox is jammed but not locked. Small mercy.", "The garage door's stuck half-open, just enough light bleeding through to work by. Dust coats everything in a layer thick enough to write my name in. I start with the workbench \u2014 most people forget to check under the pegboard, and most people are wrong to."], "human": {"text": "A figure crouches by the far wall, already sorting through a crate of parts with practiced hands. They clock me before I can decide whether to back out quietly, and neither of us reaches for a weapon first \u2014 but neither of us backs down either.", "enemy": "FACELESS SCOUT"}, "zombie": {"text": "Something knocks over a stack of hubcaps in the back corner, the clatter echoing off the concrete walls far longer than it should. A shape drags itself out from behind the old lift, one leg working better than the other.", "enemy": "COMMON ASHEN"}, "special": {"text": "The overhead fluorescent buzzes, dims, then buzzes again in a pattern that has nothing to do with a dying ballast. Near the breaker box, wiring hangs exposed and twitching, feeding into something that shouldn't be able to hear \u2014 but is listening anyway.", "enemy": "ANTENNA ASHEN"}}, "depot": {"clear": ["The fence is cut clean, not climbed \u2014 someone came through here recently with better tools than mine. Crates are stacked floor to ceiling in the main bay, most stenciled with unit numbers that don't mean anything to me anymore. I read by flashlight, moving fast, cataloguing what's worth the weight.", "Warning tape sags across the entrance, faded from a bright yellow to a tired grey. Whatever kept people out once isn't keeping anyone out now. Inside, the air smells like old rust and older paperwork. I start with the medical crate \u2014 always the medical crate first."], "human": {"text": "Boot prints in the dust head the same direction I'm walking, fresh enough that whoever made them is still in the building. I hear the crate lid drop back into place around the next corner half a second before I round it.", "enemy": "FACELESS RAIDERS"}, "zombie": {"text": "A metal door groans open somewhere deeper in the depot, hinges long overdue for oil. Whatever pushed it isn't in a hurry \u2014 the scrape of feet across concrete is slow, deliberate, and getting louder.", "enemy": "COMMON ASHEN"}, "special": {"text": "Emergency lighting flickers along the corridor in a rhythm that syncs with a low electronic pulse coming from somewhere past the ammo racks. The wiring here was military grade once. Something's found a way to still use it.\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nZONE: THE ROOTS\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550", "enemy": "ANTENNA ASHEN"}}, "greenhouse": {"clear": ["Glass panels are fogged over thick enough that I can barely see my own hand in front of me. Rows of plants nobody's tended in weeks lean toward whatever light still gets through the grime. I move row by row, taking what's still good, leaving what's already turned.", "The greenhouse door sticks on a warped frame, swollen from seasons of humidity with nowhere to escape to. Inside, the air is thick and green-smelling, almost peaceful. I remind myself that peaceful and safe aren't the same thing out here, and keep moving with a purpose."], "human": {"text": "A shape moves between the rows near the far wall, careful not to disturb the leaves more than necessary \u2014 someone who knows this greenhouse well enough to move quietly through it. They freeze the second they hear me do the same.", "enemy": "FACELESS SCOUT"}, "zombie": {"text": "Something brushes against a hanging vine two rows over, setting off a cascade of rustling that doesn't stop when it should. A shape lurches between the trellises, dragging one arm through the leaves like it's forgotten how limbs are supposed to move.", "enemy": "COMMON ASHEN"}, "special": {"text": "A thin electric whine cuts through the humid air, out of place among the rustling leaves and dripping condensation. Near the old irrigation control box, wires spill out through a cracked panel, twitching in a pattern too steady to be damage.", "enemy": "ANTENNA ASHEN"}}, "windmill": {"clear": ["The ladder's rusted through in more places than I'd like, each rung tested before I trust it with my full weight. From the platform halfway up, the whole valley spreads out quiet and still. I catalogue the gearbox housing before starting the climb back down \u2014 no sense rushing a fall.", "Wind turns the blades just enough to creak but not enough to matter, a slow groan that's almost soothing once I stop flinching at it. The housing at the base has been picked at before, but not thoroughly \u2014 whoever tried gave up before finishing the job."], "human": {"text": "Someone's already at the base of the tower, running a hand along the same housing I came for. They spot me on the ladder before I can decide whether climbing back up is a better option than climbing down.", "enemy": "FACELESS SCOUT"}, "zombie": {"text": "A groan rises from the tall grass at the tower's base, low and wet, nothing like the wind through the blades above. Something is dragging itself through the grass toward the sound of the ladder creaking under my boots.", "enemy": "COMMON ASHEN"}, "special": {"text": "The windmill's old control panel sparks weakly at the base of the tower, a system that shouldn't have any charge left in it. A thin whine answers back from somewhere in the grass, matching the sputtering rhythm of the dying electronics.", "enemy": "ANTENNA ASHEN"}}, "barn": {"clear": ["Water's up past my ankles the moment I step through the door, dark and still except for the ripples I'm making. Feed sacks along the near wall are ruined beyond saving, but the loft above stayed dry \u2014 a ladder up, and the good stock is still stacked where it was left.", "The barn doors hang crooked on broken hinges, letting in just enough light to see the flood line staining the walls waist-high. Whatever caused this happened weeks ago, maybe longer. I wade through carefully, watching for anything the water might be hiding underneath its surface."], "human": {"text": "A splash sounds from the far end of the barn, too deliberate to be runoff finding a new path. A figure straightens up near the loft ladder, water dripping from soaked boots, clearly here for the same reason I am.", "enemy": "FACELESS SCOUT"}, "zombie": {"text": "Something shifts in the water near the stalls, slow and heavy, sending ripples out toward my boots before I even see what's moving. It surfaces just enough to show it's not looking for anything but the sound I just made.", "enemy": "COMMON ASHEN"}, "special": {"text": "A faint electric hum travels through the standing water, prickling against my skin even through my boots. Somewhere in the flooded stalls, exposed wiring hangs low enough to touch the surface, sparking each time it dips below.", "enemy": "ANTENNA ASHEN"}}, "terraces": {"clear": ["The sun's dropping faster than I planned for, throwing long shadows across the terraces that make every row look like it's moving. Rows of vegetables nobody's harvested sit heavy on the vine. I work fast, filling every pocket before the light gives out completely.", "Dusk turns the whole hillside gold for a few minutes before the color drains out of everything at once. I know this window doesn't last, so I don't waste it \u2014 moving row to row, taking what's ripe, leaving what isn't worth the extra time."], "human": {"text": "A silhouette crests the ridge above the terraces, backlit by the last of the sun, watching the fields the way someone watches something they consider theirs. They start down the slope the second they see me moving between the rows.", "enemy": "FACELESS SCOUT"}, "zombie": {"text": "Movement at the tree line catches my eye just as the light fully fails \u2014 a shape stepping out from between the trunks with the particular stiffness that never means anything good after dark.", "enemy": "COMMON ASHEN"}, "special": {"text": "As the last light fades, a faint hum rises from somewhere near the old irrigation shed at the terrace's edge, steady and electric against the settling quiet of dusk. Something out there is still drawing power from wires that should've died years ago.", "enemy": "ANTENNA ASHEN"}}, "cellar": {"clear": ["She handed me the key herself, which still feels strange to think about. The cellar's cool and dry, shelves of preserves lined up in careful rows that took someone real patience to build. I move carefully, respectful of the trust this represents, taking only what she said I could.", "The cellar door groans on hinges that have clearly been oiled recently \u2014 someone maintains this place with real care. Jars of preserves catch what little light makes it down the stairs, labeled in handwriting too neat to be rushed. I work methodically, matching that same care."], "human": {"text": "A voice calls out from the top of the cellar stairs, sharp and wary \u2014 someone who wasn't told I'd be down here. I freeze halfway through reaching for a jar, waiting to see if the voice belongs to trust or trouble.", "enemy": "FACELESS SCOUT"}, "zombie": {"text": "A jar topples from a shelf in the dark corner of the cellar, shattering against the stone floor \u2014 not from my hand. Something's been down here longer than I have, and it just found out it isn't alone anymore either.", "enemy": "COMMON ASHEN"}, "special": {"text": "A string of old work lights along the cellar ceiling flickers on for just a second, powered by something that shouldn't still be running. The flicker keeps pace with a low, patient hum coming from the darkest corner of the room.\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nZONE: THE FACELESS\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550", "enemy": "ANTENNA ASHEN"}}, "storefront": {"clear": ["Half the ceiling's already on the floor, drywall dust still settling from something that happened long before I got here. I stay close to the load-bearing walls, testing each step before committing my full weight to it. Whoever looted this place first left the heavy stuff behind \u2014 lucky for me.", "The storefront's sign hangs by one bolt, swinging slightly in a breeze I can't feel down here. Inside, shelving units lean against each other like dominoes that never quite fell. I pick my way through carefully, aware that one wrong nudge could change that."], "human": {"text": "Footsteps echo from two aisles over, careful and deliberate over the broken glass \u2014 someone who's learned to move quietly through wreckage like this. They go still the second my own footsteps give me away.", "enemy": "FACELESS SCOUT"}, "zombie": {"text": "Something groans from beneath a collapsed shelf near the back, half-buried under drywall and broken fixtures. It's pinned, or close to it \u2014 but not so pinned that it isn't already trying to work itself free.", "enemy": "COMMON ASHEN"}, "special": {"text": "A painted mask on the wall catches my eye first, then the faint electric buzz coming from behind it. Wiring runs down through the cracked drywall, feeding into something that hums low and patient just out of sight.", "enemy": "ANTENNA ASHEN"}}, "silentblock": {"clear": ["No birds, no wind through the broken windows, nothing but my own footsteps on cracked pavement. A mask painted on the wall here might be a warning or might be a claim \u2014 either way, I don't linger long enough to find out which.", "The whole block feels like it's holding its breath, which should worry me more than it does. I find a supply cache tucked behind a dumpster, exactly where a rumor said it might be. Grabbing it fast, before the silence decides to explain itself."], "human": {"text": "A shape steps out from a doorway halfway down the block, unhurried, like they've been watching me the whole time I thought I was alone. The mask gives nothing away, but the posture says they already know why I'm here.", "enemy": "FACELESS RAIDERS"}, "zombie": {"text": "A low moan breaks the unnatural quiet, rolling down the empty street from somewhere I can't immediately place. The silence that made this block feel safe just became the reason I didn't hear it coming sooner.", "enemy": "COMMON ASHEN"}, "special": {"text": "A streetlamp flickers to life halfway down the block, buzzing with power that has no business still existing. Beneath it, wires spill from a cracked junction box, twitching in a rhythm that doesn't match the light at all.", "enemy": "ANTENNA ASHEN"}}, "rooftop": {"clear": ["The fire escape groans under every step, each one a small negotiation with rust and gravity. Someone stashed supplies up here on purpose, tucked behind an old water tank where casual eyes wouldn't wander. Good instincts, whoever they were.", "Climbing this high always costs more energy than it should, legs burning by the third flight of the fire escape. The view from the roof almost makes it worth it \u2014 clear sightlines in every direction, which means I can see trouble coming before it sees me."], "human": {"text": "A figure's already up here, crouched by the same water tank I'm heading for, going through a bag with quick, practiced hands. They spot me the second I clear the last rung of the fire escape.", "enemy": "FACELESS SCOUT"}, "zombie": {"text": "Something scrapes against the rooftop gravel behind the HVAC unit, dragging itself out from a gap I didn't think was wide enough for anything to fit through. It found its way up here somehow, and it's not leaving without a reason.", "enemy": "COMMON ASHEN"}, "special": {"text": "The rooftop's old satellite dish creaks on its mount, turning slightly though there's no wind to move it. A thin cable trails from its base down into the building, humming with current that shouldn't still be flowing.", "enemy": "ANTENNA ASHEN"}}, "subway": {"clear": ["The stairs descend into pitch black, every instinct screaming to turn around before I even take the first step. Fresh footprints in the dust head the same direction I'm going \u2014 someone came through recently and, more importantly, came back out.", "A supply drop sits deliberately placed near the turnstiles, left there on purpose rather than dropped in a hurry. Someone wanted this found, which makes me wonder what else down here they wanted found \u2014 or wanted hidden."], "human": {"text": "A flashlight beam sweeps across the far wall before clicking off fast, someone realizing too late that light travels further than they meant it to down here. I hear boots shift on the platform, waiting to see which of us moves first.", "enemy": "FACELESS RAIDERS"}, "zombie": {"text": "Something drags itself across the platform floor deeper in the tunnel, the sound bouncing strangely off tile and steel in a way that makes distance impossible to judge. Closer than I'd like either way.", "enemy": "COMMON ASHEN"}, "special": {"text": "An old subway announcement speaker crackles overhead, spitting garbled fragments of a voice that hasn't broadcast anything real in years. Exposed wiring near the ticket booth pulses in time with the static, like something's using the system to listen instead of speak.", "enemy": "ANTENNA ASHEN"}}, "maskzero": {"clear": ["Nobody stopped me at the perimeter, which means something, one way or another. Every mask I pass tracks me without a word, and I keep my hands visible and my pace steady. This deep into their territory, calm reads better than fast.", "The Faceless don't bother hiding their numbers here, masks visible on every rooftop and doorway along the route. I move like I belong, or at least like I'm not worth the trouble of stopping. It works, for now."], "human": {"text": "A figure steps directly into my path this time, no pretense of coincidence, mask tilted like they're studying something they haven't fully decided about yet. This isn't a scout. This is someone with the authority to make a decision about me.", "enemy": "FACELESS RAIDERS"}, "zombie": {"text": "Even here, in the heart of territory the Faceless clearly control, something's gotten through the perimeter \u2014 a low groan rising from an alley they apparently haven't cleared yet either.", "enemy": "COMMON ASHEN"}, "special": {"text": "A rooftop antenna array crackles with static that has nothing to do with the radio gear it was built for. Wires spill down the building's side, feeding a hum that every masked figure nearby seems to be deliberately ignoring \u2014 like they already know better than to get close.\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nZONE: THE BEACON\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550", "enemy": "ANTENNA ASHEN"}}, "trawler": {"clear": ["The deck tilts hard to one side, every step a small negotiation with gravity and rust. Cabin's flooded below, but the storage lockers up top held against the water. I work quickly, aware the whole boat groans a little louder every time a wave passes under the hull.", "Rope and netting tangle across the deck in a mess that took real effort to make that bad. I pick through it carefully, finding wiring in the wreckage that Marcus would probably want to see. Small find, but the Beacon values small finds."], "human": {"text": "A figure crouches near the wheelhouse, going through the same lockers I came for, moving with the unhurried confidence of someone who doesn't expect company. They straighten up fast when the deck creaks under my boot.", "enemy": "FACELESS SCOUT"}, "zombie": {"text": "Something shifts in the flooded cabin below deck, water sloshing against the walls in a rhythm too deliberate to be the current. It's finding its way up the ladder, slow but persistent.", "enemy": "COMMON ASHEN"}, "special": {"text": "The trawler's old radio equipment sparks weakly in the wheelhouse, a system that should have died with the boat. Salt-corroded wires hang loose from the console, twitching with a current that has no right to still exist out here.", "enemy": "ANTENNA ASHEN"}}, "warehouse": {"clear": ["The padlock's rusted through but the chain isn't, so cutting through takes longer than I budgeted for. Inside, crates stack to the ceiling \u2014 most empty, a few very much not. Generator parts near the back. Marcus is going to want to hear about this.", "Water damage has warped half the floorboards into a maze of soft spots I have to test before trusting. The warehouse still smells like salt and motor oil even years after the boats stopped coming in regularly. I move carefully, cataloguing anything with a wire still attached."], "human": {"text": "A shadow crosses between the crate stacks ahead, deliberate and unhurried, someone clearly comfortable moving through this warehouse. They spot me before I clear the next row of shelving.", "enemy": "FACELESS SCOUT"}, "zombie": {"text": "A crate topples somewhere deeper in the warehouse, the crash echoing off corrugated metal walls far longer than it should. Something's moving through the stacks, and it's not being careful about the noise it makes.", "enemy": "COMMON ASHEN"}, "special": {"text": "The warehouse's old breaker panel sparks intermittently near the loading door, a system with no business drawing current anymore. Wires spill from the panel's cracked housing, humming steady beneath the clatter of settling metal.", "enemy": "ANTENNA ASHEN"}}, "crane": {"clear": ["The ladder sways more than I'd like this high up, each rung a fresh argument with the wind coming off the water. The control cab's been someone's shelter once, blankets long since rotted through. The cache is exactly where the rumor said it'd be \u2014 small mercies, even up here.", "Climbing the crane always feels like climbing toward a decision I haven't made yet. From the cab, the whole dock spreads out below, quiet in a way that's either reassuring or exactly the kind of quiet that precedes something worse."], "human": {"text": "Someone's already in the control cab when I reach the top, silhouetted against the grimy window, going through the same cache I climbed all this way for. They turn at the sound of the ladder creaking under my weight.", "enemy": "FACELESS SCOUT"}, "zombie": {"text": "A groan rises from the base of the crane, carried strangely by the metal structure all the way up to where I'm standing. Something's found its way into the scaffolding below, and it's not in a hurry to leave.", "enemy": "COMMON ASHEN"}, "special": {"text": "The crane's control panel flickers with a current that has no source I can find, buttons lighting up in sequences that mean nothing. A cable trailing down the structure hums in time with the flickering, feeding something below that's very patiently waiting.", "enemy": "ANTENNA ASHEN"}}, "factoryfloor": {"clear": ["The machines sit frozen mid-cycle, like the whole shift just walked out at once and never came back to finish. Chemical smell lingers stronger here than anywhere else in the complex. I don't linger longer than I have to, moving straight for the parts cache Marcus described.", "Conveyor belts stretch across the factory floor in silent rows, dust thick enough to trace the last path anyone walked. The parts cache is almost exactly where he said, tucked behind a control station that still has a coffee cup sitting on it, decades stale."], "human": {"text": "A figure moves between two idle machines ahead, checking something on a control panel with familiar hands \u2014 someone who's been here before, more than once. They notice my reflection in the panel's glass before I can back away.", "enemy": "FACELESS SCOUT"}, "zombie": {"text": "Something catches on a conveyor belt deeper in the factory, metal scraping against metal in a way that shouldn't happen on its own. A shape stumbles free of the machinery, dragging a length of chain that never quite lets go.", "enemy": "COMMON ASHEN"}, "special": {"text": "The factory's old PA system crackles overhead, a burst of feedback looping without anyone at the controls. Near the main breaker station, cables spill out across the floor, twitching with current that has no business surviving the plant's shutdown.", "enemy": "ANTENNA ASHEN"}}, "workshop": {"clear": ["He gave me the route himself this time, no test, no shadow following to check my work. Everything's exactly where he said it would be \u2014 he knows this stretch of the docks better than anyone left alive. Heading back with more than he asked for, which should be an interesting conversation.", "The Beacon trusts me enough now to send me out alone on a run like this, which still catches me off guard every time I think about it. I move through the checkpoints Marcus marked without incident, filling the pack faster than expected."], "human": {"text": "A figure blocks the narrow path between two shipping containers, arms crossed, clearly waiting rather than passing through. Not a scout this time \u2014 someone sent specifically to see what I do next.", "enemy": "FACELESS RAIDERS"}, "zombie": {"text": "A groan rolls out from between the shipping containers, low and close, closer than the open layout of the dockyard should allow anything to get without me noticing sooner.", "enemy": "COMMON ASHEN"}, "special": {"text": "Marcus's makeshift relay tower near the workshop hums louder than usual, static bleeding out from a speaker that shouldn't be receiving anything out here. Something nearby is answering that signal, and it isn't him.\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nZONE: RADIO TOWER\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550", "enemy": "ANTENNA ASHEN"}}, "relay": {"clear": ["Static crackles from a speaker that shouldn't still have power running to it, weak but steady. Wiring in here matches almost exactly what's missing from the family radio \u2014 like this whole station was built from the same blueprint, decades apart. I pull everything usable before the static gets any louder.", "The relay station's outer door hangs loose on one hinge, easy enough to slip through without forcing anything. Inside, dust coats every surface except the main console, which someone's clearly kept clear on purpose. I work fast, matching whoever's habit that was."], "human": {"text": "A figure's parked near the main console, headphones on, clearly listening to something on a frequency that isn't meant to be shared. They rip the headphones off the second they notice they're not alone anymore.", "enemy": "FACELESS SCOUT"}, "zombie": {"text": "A groan rises from behind the relay station's server racks, low and wet, out of place among the electronic hum filling the room. Something's nested back there, drawn maybe by the same static that drew me in.", "enemy": "COMMON ASHEN"}, "special": {"text": "The relay station's static isn't just background noise \u2014 it's responding to something. Near the antenna feed line, exposed wiring twitches in perfect rhythm with a low hum that's coming from somewhere much too close for comfort.", "enemy": "ANTENNA ASHEN"}}, "bridgecrossing": {"clear": ["The bridge groans under every step, a sound that travels straight up through my boots and into my spine. Half the span is missing entirely further along, forcing a careful path around a gap that drops further than I want to think about. Made it across. The tower looks a lot bigger up close than it did from the shelter roof.", "Cables sway overhead in a wind that feels stronger up here than it did on solid ground, singing a low note against the twisted metal. I keep close to the guardrail even though half of it is missing, moving steady rather than fast. The far side comes slowly, but it comes."], "human": {"text": "A figure stands at the exact center of the bridge, blocking the only stable path across, watching me approach with the patience of someone who has nowhere else to be right now. This crossing clearly matters to more people than just me.", "enemy": "FACELESS RAIDERS"}, "zombie": {"text": "Something claws its way up from the wreckage caught beneath the bridge's collapsed section, dragging itself onto the walkway just ahead of where I need to cross. The gap in the span suddenly feels a lot more relevant.", "enemy": "COMMON ASHEN"}, "special": {"text": "A cable running the length of the bridge hums with current it shouldn't carry, sparking faintly where it's frayed near the midpoint. Whatever's drawing that power is close enough that the hum changes pitch every time I take another step forward.", "enemy": "ANTENNA ASHEN"}}, "staticfield": {"clear": ["The wreckage field is dead silent for once, which almost feels worse than the usual hum. I move between the twisted metal fast, taking what's exposed and leaving what's buried too deep to be worth the time. The air itself feels wrong here, like it's humming underneath everything even when nothing's making a sound.", "The static's quieter today, almost gone entirely \u2014 whatever usually stirs here seems to be somewhere else for now. I don't question the good luck, just work fast through the wreckage, filling every pocket before the quiet decides to end."], "human": {"text": "Two figures emerge from behind a collapsed truck ahead, already spread out to flank the wreckage I'm searching through. Whatever brought them out to a field this unstable, it wasn't caution.", "enemy": "FACELESS RAIDERS"}, "zombie": {"text": "The static gets louder as something drags itself out of the wreckage nearby, faster than the ones back home ever moved, like the field itself has changed whatever it used to be.", "enemy": "CRACKED ASHEN"}, "special": {"text": "The humming in the air isn't just atmosphere \u2014 it's coming from something specific. Wires spill from a piece of wreckage standing dead center in the field, and whatever's tangled in them has already turned toward the sound of me arriving.", "enemy": "ANTENNA ASHEN"}}, "beneathtower": {"clear": ["The maintenance tunnels smell like ash even this far underground, a smell that has no business reaching this deep. Equipment down here is decades old, but some of it still hums faintly with power that traces back to somewhere above. This is the last chip. After this, the radio has everything it needs.", "Every step down into the tunnels feels heavier than the last, and it isn't just the incline. The old maintenance systems here were built to last generations, and it shows \u2014 some of the wiring is still intact enough to salvage cleanly, which almost never happens this deep."], "human": {"text": "A figure waits at a junction ahead, clearly having anticipated someone would eventually make it this far underground. They don't reach for anything, but they don't move aside either.", "enemy": "FACELESS RAIDERS"}, "zombie": {"text": "Something moves in the tunnel behind me, cutting off the path back the way I came \u2014 slow, but between me and the only way out I know of down here.", "enemy": "CRACKED ASHEN"}, "special": {"text": "The tunnel walls hum with current that has no clear source, growing louder the deeper I go. At the next junction, wiring spills from a cracked panel in a tangle that's still, impossibly, drawing power from somewhere far above.", "enemy": "ANTENNA ASHEN"}}, "lastfrequency": {"clear": ["Every step up the tower feels heavier than the last, and it isn't the climb. The signal is so close now I can almost hear it without the radio at all, a pressure behind my ears that has nothing to do with altitude. Whatever happens next, I made it here. That has to count for something.", "The stairwell inside the tower spirals up further than it should be physically possible to build, but here it is anyway, step after step in near-total dark. Near the top, faint light bleeds through a maintenance hatch, and with it, something that sounds almost like a voice."], "human": {"text": "A figure blocks the final stairwell before the top, mask catching what little light makes it this high up. Whether they're here to stop me or just to watch what happens next, I can't tell \u2014 and I don't have the luxury of waiting to find out.", "enemy": "FACELESS RAIDERS"}, "zombie": {"text": "Something waits on the landing just below the final door, more of them than I've seen gathered in one place before, drawn here by the same signal that drew me. They haven't noticed me yet. That won't last.", "enemy": "CRACKED ASHEN"}, "special": {"text": "This close to the source, the hum isn't background noise anymore \u2014 it's a voice, fractured and looping, coming from something standing just past the final door. Every wire in this tower feeds toward whatever that is, and it already knows I'm here.", "enemy": "ANTENNA ASHEN"}}};
+
+
+  // =========================================================
+  // MISSION ENCOUNTER SYSTEM
+  // =========================================================
+
+  // Combat cost table: how much ammo (ranged) or energy (melee) it takes
+  // to deal with each enemy type per weapon.
+  const ENCOUNTER_COST = {
+    'FACELESS SCOUT':   { knifeEnergy:15, macheteEnergy:10, pistol:1, shotgun:1, autorifle:1 },
+    'FACELESS RAIDERS': { knifeEnergy:20, macheteEnergy:14, pistol:2, shotgun:1, autorifle:1 },
+    'COMMON ASHEN':     { knifeEnergy:20, macheteEnergy:12, pistol:2, shotgun:1, autorifle:1 },
+    'CRACKED ASHEN':    { knifeEnergy:35, macheteEnergy:20, pistol:4, shotgun:2, autorifle:1 },
+    'ANTENNA ASHEN':    { knifeEnergy:55, macheteEnergy:35, pistol:7, shotgun:3, autorifle:2 },
+  };
+
+  const CLOSING_LINES_CLEAR = [
+    "I've got what I need. Better head back before I push my luck.",
+    "Pockets are full enough. No sense staying longer than I have to.",
+    "The light's starting to fade. Better get back before dark.",
+    "That's enough for one trip. I'll come back for the rest another day.",
+    "My legs are already telling me it's time to go. I should listen.",
+    "Got what I came for. Time to disappear before something else shows up.",
+    "Enough. Every extra minute here is a minute too many.",
+    "I can feel my energy running thin. Heading back while I still can.",
+  ];
+  const CLOSING_LINES_RETREAT = [
+    "I'm not in any shape to take this on right now. Pulling back.",
+    "Already exhausted. Not worth the risk — heading back to the shelter.",
+    "Some fights aren't worth having. This is one of them.",
+    "I don't have what I'd need if this goes wrong. Better safe.",
+    "No weapon, no energy, no chance. Retreating while I still can.",
+    "Whatever's in there can keep it. I'm not dying for supplies.",
+    "My gut says run, and today I'm listening to my gut.",
+    "This isn't the fight I came prepared for. Falling back.",
+  ];
+  const CLOSING_LINES_AFTER_FIGHT = [
+    "That fight took more out of me than I expected. Better call it here.",
+    "Should head back before I run into anything else out there.",
+    "There might be more of them nearby. I'm in no condition for a second round.",
+    "Hands are still shaking. Time to put some distance between me and this place.",
+    "That was closer than I'd like to admit. Heading home while I still can.",
+    "Whatever's left in there isn't worth another fight like that. Pulling out.",
+    "One fight was enough for today. My legs are already moving toward the exit.",
+    "I got lucky. Not pushing that luck any further tonight.",
+  ];
+
+  function randomFrom(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+
+  // Encounter chance scales with mission level: roughly 15% at level 1, up to ~70% at level 45+
+  function encounterChanceFor(mission){
+    return Math.min(0.7, 0.15 + (mission.level / 45) * 0.55);
+  }
+
+  // Given a mission, decide if an encounter fires, and if so which kind.
+  // Higher-level missions weight toward tougher enemies.
+  function rollEncounter(mission){
+    if(Math.random() > encounterChanceFor(mission)) return null;
+    const lvl = mission.level;
+    const roll = Math.random();
+    // weight: human vs common vs cracked vs antenna(special), shifting with level
+    if(roll < 0.35) return 'human';
+    if(lvl < 20) return 'zombie';
+    if(roll < 0.8) return 'zombie';
+    return 'special';
+  }
+
+  let currentEncounterKind = null;
+  let currentEncounterEnemy = null;
+  let missionHadFight = false;
+  let missionForcedRetreat = false;
+
+  function getEquippedWeaponInfo(){
+    const equip = getEquipment();
+    const weaponId = equip.weapon;
+    if(!weaponId || !WEAPONS[weaponId]) return { id:null, ranged:false, tier:0 };
+    return { id: weaponId, ranged: WEAPONS[weaponId].ranged, tier: WEAPONS[weaponId].tier, ammoType: WEAPONS[weaponId].ammoType };
+  }
+
+  function getAmmoCount(ammoType){
+    if(!ammoType) return 0;
+    const def = AMMO[ammoType];
+    if(!def) return 0;
+    const item = (inventoryData.weapon || []).find(i => i.itemId === ammoType);
+    return item ? item.qty : 0;
+  }
+
+  // Determine if the player CAN currently fight, and what it will cost.
+  function evaluateFightOption(enemyName){
+    const cost = ENCOUNTER_COST[enemyName];
+    if(!cost) return { possible:false };
+    const weapon = getEquippedWeaponInfo();
+
+    if(weapon.ranged){
+      const ammoCount = getAmmoCount(weapon.ammoType);
+      const needed = cost[weapon.id === 'WEAPON_PISTOL' ? 'pistol' : weapon.id === 'WEAPON_SHOTGUN' ? 'shotgun' : 'autorifle'];
+      if(ammoCount >= needed){
+        return { possible:true, mode:'ammo', ammoType:weapon.ammoType, amount:needed };
+      }
+      // fall through to melee if out of ammo
+    }
+    // Melee fallback: knife or machete, whichever is equipped; if neither, bare-handed uses knife-tier energy cost as last resort
+    const meleeKey = weapon.id === 'WEAPON_MACHETE' ? 'macheteEnergy' : 'knifeEnergy';
+    const energyNeeded = cost[meleeKey];
+    const currentEnergy = playerState.energy;
+    if(currentEnergy >= energyNeeded){
+      return { possible:true, mode:'energy', amount:energyNeeded };
+    }
+    return { possible:false };
+  }
+
+  function resolveFight(enemyName){
+    const outcome = evaluateFightOption(enemyName);
+    if(!outcome.possible){
+      // Forced retreat — no resources to fight with
+      missionForcedRetreat = true;
+      return false;
+    }
+    if(outcome.mode === 'ammo'){
+      const item = inventoryData.weapon.find(i => i.itemId === outcome.ammoType);
+      item.qty -= outcome.amount;
+      if(item.qty <= 0) inventoryData.weapon = inventoryData.weapon.filter(i => i.itemId !== outcome.ammoType);
+    } else {
+      playerState.energy = Math.max(0, playerState.energy - outcome.amount);
+    }
+    missionHadFight = true;
+    queueSave();
+    return true;
+  }
+
+  function showEncounterPrompt(kind, enemyName, narrativeText){
+    currentEncounterKind = kind;
+    currentEncounterEnemy = enemyName;
+    typewriteLine(narrativeText);
+    document.getElementById('encounterAlert').textContent = '⚠ ' + enemyName + ' DETECTED';
+    document.getElementById('encounterAlert').classList.add('show');
+    document.getElementById('missionActions').style.display = 'flex';
+    missionTimerPaused = true;
+  }
+
+  function updateMissionHud(){
+    if(!playerState) return;
+    document.getElementById('hudHp').textContent = playerState.hp;
+    document.getElementById('hudEnergy').textContent = playerState.energy;
+    const weapon = getEquippedWeaponInfo();
+    const hudWeaponIcon = document.getElementById('hudWeaponIcon');
+    const hudAmmoText = document.getElementById('hudAmmoText');
+    if(weapon.id){
+      hudWeaponIcon.innerHTML = '<img src="' + WEAPONS[weapon.id].icon + '" style="width:100%;height:100%;object-fit:contain;">';
+      if(weapon.ranged){
+        hudAmmoText.textContent = 'x' + getAmmoCount(weapon.ammoType);
+      } else {
+        hudAmmoText.textContent = '—';
+      }
+    } else {
+      hudWeaponIcon.innerHTML = '';
+      hudAmmoText.textContent = 'UNARMED';
+    }
+  }
 
 
   function renderInventory(tab){
