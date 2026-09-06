@@ -2844,16 +2844,33 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
   let encounterRolled = false;
   let encounterActive = false;
 
-  function typewriteLine(text){
+  const TYPEWRITER_SPEED_MS = 48;
+  const PARAGRAPH_GAP_MS = 900;
+  let typewriterBusyUntil = 0;
+  let typewriteQueueTimer = null;
+
+  // Types out a line of narrative. If a previous line is still typing (or in its
+  // post-typing breathing gap), this new line waits for it to finish first —
+  // so encounters and closing lines never cut off mid-sentence.
+  // Returns how many ms to wait before it's safe to move on (fully typed + a reading pause).
+  function typewriteLine(text, extraPauseMs){
+    extraPauseMs = extraPauseMs === undefined ? 2200 : extraPauseMs;
+    const startDelay = Math.max(0, typewriterBusyUntil - Date.now());
+    clearTimeout(typewriteQueueTimer);
     clearInterval(typewriterTimer);
-    const el = document.getElementById('narrativeText');
-    el.textContent = '';
-    let i = 0;
-    typewriterTimer = setInterval(() => {
-      el.textContent += text[i];
-      i++;
-      if(i >= text.length) clearInterval(typewriterTimer);
-    }, 28);
+    typewriteQueueTimer = setTimeout(() => {
+      const el = document.getElementById('narrativeText');
+      el.textContent = '';
+      let i = 0;
+      typewriterTimer = setInterval(() => {
+        el.textContent += text[i];
+        i++;
+        if(i >= text.length) clearInterval(typewriterTimer);
+      }, TYPEWRITER_SPEED_MS);
+    }, startDelay);
+    const totalTypeMs = startDelay + (text.length * TYPEWRITER_SPEED_MS);
+    typewriterBusyUntil = Date.now() + totalTypeMs + PARAGRAPH_GAP_MS;
+    return totalTypeMs + extraPauseMs;
   }
 
   function triggerEncounter(mission){
@@ -2968,13 +2985,13 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
 
   function completeMission(mission){
     const closingLine = missionHadFight ? randomFrom(CLOSING_LINES_AFTER_FIGHT) : randomFrom(CLOSING_LINES_CLEAR);
-    typewriteLine(closingLine);
+    const waitMs = typewriteLine(closingLine);
     setTimeout(() => {
       const obtained = grantLoot(mission, 1);
       const xpResult = grantXP(mission.xp);
       finalizeMissionState();
       showMissionResult(xpResult.leveledUp ? 'MISSION COMPLETE — LEVEL UP!' : 'MISSION COMPLETE', obtained, mission.xp);
-    }, 1400);
+    }, waitMs);
   }
 
   function endMissionEarly(reasonLine, forced){
@@ -2985,7 +3002,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     const elapsed = (Date.now() - startedAt) / 1000;
     const fraction = Math.min(1, elapsed / mission.duration_seconds);
 
-    typewriteLine(reasonLine);
+    const waitMs = typewriteLine(reasonLine);
     document.getElementById('encounterAlert').classList.remove('show');
 
     setTimeout(() => {
@@ -2997,7 +3014,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         (xpResult.leveledUp ? 'LEVEL UP! — ' : '') + (forced ? 'FORCED RETREAT — ' : 'RETREATED — ') + Math.round(fraction*100) + '% RECOVERED',
         obtained, xpAmount
       );
-    }, 1400);
+    }, waitMs);
   }
 
   document.getElementById('fightBtn').addEventListener('click', () => {
