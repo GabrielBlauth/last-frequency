@@ -2811,8 +2811,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
 
     document.getElementById('activeMissionName').textContent = mission.name;
     document.getElementById('activeMissionLvl').textContent = 'LV ' + mission.level;
-    document.getElementById('missionActions').style.display = 'flex';
-    document.getElementById('encounterAlert').classList.remove('show');
+    document.getElementById('missionActions').style.display = 'none';
     updateMissionHud();
 
     missionHadFight = false;
@@ -3027,9 +3026,11 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     if(won){
       showToast(currentEncounterEnemy + ' DEALT WITH');
       document.getElementById('encounterAlert').classList.remove('show');
+      document.getElementById('missionActions').style.display = 'none';
       currentEncounterEnemy = null;
       currentEncounterKind = null;
       encounterActive = false;
+      typewriteLine(randomFrom(VICTORY_LINES));
     } else {
       endMissionEarly(randomFrom(CLOSING_LINES_RETREAT), true);
     }
@@ -3360,6 +3361,16 @@ const MISSION_NARRATIVES = {"farmhouse": {"clear": ["The gate creaks but holds. 
     "Whatever's left in there isn't worth another fight like that. Pulling out.",
     "One fight was enough for today. My legs are already moving toward the exit.",
     "I got lucky. Not pushing that luck any further tonight.",
+  ];
+  const VICTORY_LINES = [
+    "It was hard, but I made it through. Better keep exploring, see if there's anything else worth finding.",
+    "That was close, but I'm still standing. Let's see what else this place has.",
+    "Hands won't stop shaking, but it's dealt with. Back to looking for supplies.",
+    "Took more out of me than I'd like. Still, no sense turning back now.",
+    "That's one less thing to worry about. Continuing the search.",
+    "Rough one, but it's over. Let's keep moving before something else finds me.",
+    "I'm still here, that's what matters. Back to the search.",
+    "Didn't expect that, but I handled it. Pressing on.",
   ];
 
   function randomFrom(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
