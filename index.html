@@ -235,6 +235,7 @@
     padding:11px 12px; margin-top:9px; min-height:64px;
     font-family:'VT323', monospace; font-size:18px; color:#8ef0a8;
     line-height:1.4; text-shadow:0 0 4px rgba(142,240,168,0.4);
+    white-space: pre-line;
   }
   .narrative-box-big{ height:340px; min-height:340px; max-height:340px; overflow-y:auto; font-size:20px; line-height:1.5; }
   .narrative-cursor{ animation: blinkCursor 0.8s steps(1) infinite; color:#8ef0a8; }
@@ -2824,7 +2825,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     const nd = MISSION_NARRATIVES[mission.id];
     const openingLine = nd ? randomFrom(nd.clear) : mission.desc;
     document.getElementById('narrativeText').textContent = '';
-    typewriteLine(openingLine);
+    typewriteLine(openingLine, undefined, false);
 
     const lootPreview = document.getElementById('lootPreview');
     lootPreview.innerHTML = '';
@@ -2852,18 +2853,25 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
   // post-typing breathing gap), this new line waits for it to finish first —
   // so encounters and closing lines never cut off mid-sentence.
   // Returns how many ms to wait before it's safe to move on (fully typed + a reading pause).
-  function typewriteLine(text, extraPauseMs){
+  function typewriteLine(text, extraPauseMs, append){
     extraPauseMs = extraPauseMs === undefined ? 2200 : extraPauseMs;
+    append = append === false ? false : true; // default: keep adding to the same box
     const startDelay = Math.max(0, typewriterBusyUntil - Date.now());
     clearTimeout(typewriteQueueTimer);
     clearInterval(typewriterTimer);
     typewriteQueueTimer = setTimeout(() => {
       const el = document.getElementById('narrativeText');
-      el.textContent = '';
+      const box = document.getElementById('narrativeBox');
+      if(!append){
+        el.textContent = '';
+      } else if(el.textContent){
+        el.textContent += '\n\n';
+      }
       let i = 0;
       typewriterTimer = setInterval(() => {
         el.textContent += text[i];
         i++;
+        if(box) box.scrollTop = box.scrollHeight;
         if(i >= text.length) clearInterval(typewriterTimer);
       }, TYPEWRITER_SPEED_MS);
     }, startDelay);
