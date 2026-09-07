@@ -236,7 +236,7 @@
     font-family:'VT323', monospace; font-size:18px; color:#8ef0a8;
     line-height:1.4; text-shadow:0 0 4px rgba(142,240,168,0.4);
   }
-  .narrative-box-big{ min-height:220px; font-size:20px; line-height:1.5; }
+  .narrative-box-big{ height:340px; min-height:340px; max-height:340px; overflow-y:auto; font-size:20px; line-height:1.5; }
   .narrative-cursor{ animation: blinkCursor 0.8s steps(1) infinite; color:#8ef0a8; }
   @keyframes blinkCursor{ 50%{ opacity:0; } }
   .mission-hud{
@@ -2883,9 +2883,13 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     showEncounterPrompt(kind, entry.enemy, entry.text);
   }
 
+  const CLOSING_LEAD_SECONDS = 6;
+
   function runMissionTimer(mission, elapsedSecondsAtStart){
     clearInterval(missionInterval);
     const total = mission.duration_seconds;
+    let closingTriggered = false;
+    let closingReadyAt = 0;
 
     function tick(){
       if(encounterActive) return; // frozen on the encounter prompt until resolved
@@ -2903,14 +2907,35 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         triggerEncounter(mission);
       }
 
+      const leadSeconds = Math.min(CLOSING_LEAD_SECONDS, total * 0.3);
+      if(!closingTriggered && remaining <= leadSeconds && !encounterActive){
+        closingTriggered = true;
+        const closingLine = missionHadFight ? randomFrom(CLOSING_LINES_AFTER_FIGHT) : randomFrom(CLOSING_LINES_CLEAR);
+        const waitMs = typewriteLine(closingLine);
+        closingReadyAt = Date.now() + waitMs;
+      }
+
       if(remaining <= 0 && !encounterActive){
         clearInterval(missionInterval);
-        completeMission(mission);
+        if(!closingTriggered){
+          // Safety net for very short missions where the lead window never triggered
+          const closingLine = missionHadFight ? randomFrom(CLOSING_LINES_AFTER_FIGHT) : randomFrom(CLOSING_LINES_CLEAR);
+          closingReadyAt = Date.now() + typewriteLine(closingLine);
+        }
+        const waitLeft = Math.max(0, closingReadyAt - Date.now());
+        setTimeout(() => finalizeCompletedMission(mission), waitLeft);
       }
     }
 
     tick();
     missionInterval = setInterval(tick, 1000);
+  }
+
+  function finalizeCompletedMission(mission){
+    const obtained = grantLoot(mission, 1);
+    const xpResult = grantXP(mission.xp);
+    finalizeMissionState();
+    showMissionResult(xpResult.leveledUp ? 'MISSION COMPLETE — LEVEL UP!' : 'MISSION COMPLETE', obtained, mission.xp);
   }
 
   function grantLoot(mission, fraction){
@@ -2981,17 +3006,6 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     renderKitchen();
     showView('shelter');
   });
-
-  function completeMission(mission){
-    const closingLine = missionHadFight ? randomFrom(CLOSING_LINES_AFTER_FIGHT) : randomFrom(CLOSING_LINES_CLEAR);
-    const waitMs = typewriteLine(closingLine);
-    setTimeout(() => {
-      const obtained = grantLoot(mission, 1);
-      const xpResult = grantXP(mission.xp);
-      finalizeMissionState();
-      showMissionResult(xpResult.leveledUp ? 'MISSION COMPLETE — LEVEL UP!' : 'MISSION COMPLETE', obtained, mission.xp);
-    }, waitMs);
-  }
 
   function endMissionEarly(reasonLine, forced){
     if(!playerState || !playerState.active_mission) return;
