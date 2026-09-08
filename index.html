@@ -91,24 +91,35 @@
     text-shadow: 2px 2px 0 #000, 0 0 14px rgba(255,106,61,0.4);
   }
 
-  .player-header{
-    margin:10px 10px 0; padding:10px 12px 11px;
+  .vitals-panel{
+    margin:10px 10px 0; padding:10px;
     background: linear-gradient(160deg,#1a1f2b,#12151d);
     border:2px solid #000; border-radius:10px;
     box-shadow: inset 0 0 0 1px #2a3340;
     position:relative; z-index:2;
+    display:flex; gap:10px;
   }
-  .top-id{
-    font-family:'Press Start 2P'; font-size:10px; color:var(--bone);
-    text-shadow:1px 1px 0 #000;
-    margin-bottom:9px; text-align:left; word-break:break-all;
+  .vitals-portrait{
+    width:64px; height:72px; flex-shrink:0;
+    background: linear-gradient(160deg,#3a3d47,#24262e);
+    border:2px solid #000; box-shadow: inset -1px -1px 0 #000, inset 1px 1px 0 #4a4d55;
+    overflow:hidden;
   }
-  .level-xp-row{ display:flex; align-items:center; gap:8px; }
-  .top-level-badge{
-    font-family:'Press Start 2P'; font-size:8px; color:var(--bone);
-    background:#0a0b0d; border:2px solid #454b57; border-radius:4px;
-    padding:6px 8px; white-space:nowrap; flex-shrink:0;
+  .vitals-info{ flex:1; display:flex; flex-direction:column; gap:6px; justify-content:center; min-width:0; }
+  .vitals-id{
+    font-family:'Press Start 2P'; font-size:9px; color:var(--bone);
+    text-shadow:1px 1px 0 #000; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
+  .vitals-lvl{ color:var(--gold); margin-left:4px; }
+  .vitals-row{ display:flex; align-items:center; gap:7px; }
+  .vitals-lbl{ font-family:'Press Start 2P'; font-size:7px; color:var(--ash); width:24px; flex-shrink:0; }
+  .vitals-bar-bg{
+    flex:1; height:11px; background:#000; border:1px solid #000;
+    box-shadow: inset 0 0 0 1px #23262e; display:flex; padding:1px; gap:1px;
+  }
+  .vitals-segment{ flex:1; min-width:0; }
+  .vitals-bar-bg.hp .vitals-segment{ background: linear-gradient(180deg,#ff6a4a,#c22f1a); }
+  .vitals-bar-bg.energy .vitals-segment{ background: linear-gradient(180deg,#ffd23f,#d68a1a); }
   .xp-segments{ flex:1; display:flex; gap:2px; }
   .xp-segment{
     flex:1; height:14px; min-width:0;
@@ -119,7 +130,7 @@
     background: linear-gradient(180deg,#8bf0c4,var(--signal-dark));
     box-shadow: 0 0 5px rgba(78,230,168,0.7), inset 0 0 0 1px rgba(255,255,255,0.15);
   }
-  .xp-bar-label{ font-size:12px; color:var(--ash); text-align:right; margin-top:6px; }
+  .xp-bar-label{ font-size:13px; color:var(--ash); white-space:nowrap; flex-shrink:0; }
 
   .phone{
     background: linear-gradient(180deg,#1c1d22,#0d0e11);
@@ -673,20 +684,25 @@
         <span class="sync" id="syncStatus"><span class="dot"></span>SYNCED</span>
       </div>
 
-      <div class="player-header">
-        <div class="top-id">ID: <span id="topPlayerId">—</span></div>
-        <div class="level-xp-row">
-          <div class="top-level-badge">LVL <span id="topLevel">1</span></div>
-          <div class="xp-segments" id="xpSegments"></div>
+      <div class="vitals-panel">
+        <div class="vitals-portrait">
+          <canvas id="topCharCanvas" width="64" height="64" style="width:100%; height:100%; image-rendering:pixelated;"></canvas>
         </div>
-        <div class="xp-bar-label" id="topXpLabel">0/100 XP</div>
-      </div>
-
-      <div class="stat-row">
-        <div class="stat-pill hp"><span class="lbl">HP</span><span class="val" id="hpVal">100</span></div>
-        <div class="stat-pill en"><span class="lbl">ENR</span><span class="val" id="enrVal">100</span></div>
-        <div class="stat-pill for"><span class="lbl">STR</span><span class="val" id="strVal">10</span></div>
-        <div class="stat-pill luck"><span class="lbl">LCK</span><span class="val" id="luckVal">10</span></div>
+        <div class="vitals-info">
+          <div class="vitals-id">ID: <span id="topPlayerId">—</span> <span class="vitals-lvl">LV <span id="topLevel">1</span></span></div>
+          <div class="vitals-row">
+            <span class="vitals-lbl">HP</span>
+            <div class="vitals-bar-bg hp" id="topHpBar"></div>
+          </div>
+          <div class="vitals-row">
+            <span class="vitals-lbl">ENG</span>
+            <div class="vitals-bar-bg energy" id="topEnergyBar"></div>
+          </div>
+          <div class="vitals-row">
+            <div class="xp-segments" id="xpSegments"></div>
+            <span class="xp-bar-label" id="topXpLabel">0/100 XP</span>
+          </div>
+        </div>
       </div>
 
       <div class="content">
@@ -1334,6 +1350,8 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
   function drawStatusPreview(){
     if(playerState && playerState.appearance){
       renderAppearance(statusCanvas, playerState.appearance, 3);
+      const topCanvas = document.getElementById('topCharCanvas');
+      if(topCanvas) renderAppearance(topCanvas, playerState.appearance, 3);
     }
   }
 
@@ -1798,10 +1816,6 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
 
   function applyStateToUI(){
     document.getElementById('dayDisplay').textContent = 'DAY ' + String(playerState.day).padStart(3,'0');
-    document.getElementById('hpVal').textContent = playerState.hp;
-    document.getElementById('enrVal').textContent = playerState.energy;
-    document.getElementById('strVal').textContent = playerState.strength;
-    document.getElementById('luckVal').textContent = playerState.luck;
     document.getElementById('radioBarFill').style.width = playerState.radio_progress + '%';
     inventoryData = playerState.inventory || DEFAULT_STATE.inventory;
     if(!inventoryData.gear) inventoryData.gear = [];
@@ -1838,6 +1852,22 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     xpSegmentsEl.appendChild(seg);
   }
 
+  const VITALS_SEGMENT_COUNT = 14;
+
+  function renderVitalsBar(elId, value){
+    const el = document.getElementById(elId);
+    if(!el) return;
+    const visualMax = Math.max(value, 20); // bar reads "full" once a sensible early-game baseline is reached
+    const filled = Math.max(0, Math.min(VITALS_SEGMENT_COUNT, Math.round((value / visualMax) * VITALS_SEGMENT_COUNT)));
+    el.innerHTML = '';
+    for(let i=0; i<VITALS_SEGMENT_COUNT; i++){
+      const seg = document.createElement('div');
+      seg.className = 'vitals-segment';
+      seg.style.opacity = i < filled ? '1' : '0.15';
+      el.appendChild(seg);
+    }
+  }
+
   function updateTopBar(){
     const displayId = playerState && playerState.player_id ? playerState.player_id : '————';
     const xp = playerState ? (playerState.xp || 0) : 0;
@@ -1852,6 +1882,11 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       seg.classList.toggle('filled', i < filledSegments);
     });
     document.getElementById('topXpLabel').textContent = xp + '/' + (level * XP_PER_LEVEL) + ' XP';
+
+    if(playerState){
+      renderVitalsBar('topHpBar', playerState.hp || 0);
+      renderVitalsBar('topEnergyBar', playerState.energy || 0);
+    }
   }
 
   function grantXP(amount){
