@@ -3091,14 +3091,11 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       if(mission){
         const startedAt = new Date(playerState.active_mission.started_at).getTime();
         const elapsed = (Date.now() - startedAt) / 1000;
-        if(elapsed >= mission.duration_seconds){
-          // mission finished while away — clear it quietly, no popup
-          playerState.active_mission = null;
-          queueSave();
-        } else {
-          showView('mission');
-          enterMissionView(mission, elapsed);
-        }
+        // Always enter the mission view — even if real time already exceeds the
+        // nominal duration, so a pending encounter (or the closing narrative +
+        // reward) still gets shown properly instead of silently discarding it.
+        showView('mission');
+        enterMissionView(mission, elapsed);
       } else {
         // mission id no longer exists (e.g. removed/renamed) — clear stale state
         playerState.active_mission = null;
