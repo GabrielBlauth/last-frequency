@@ -1783,6 +1783,8 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     playerState.last_rest_day = playerState.last_rest_day ?? 0;
     playerState.inventory = playerState.inventory || DEFAULT_STATE.inventory;
     playerState.notify_at = playerState.notify_at ?? null;
+    playerState.encounter_notify_at = playerState.encounter_notify_at ?? null;
+    playerState.encounter_notified = playerState.encounter_notified ?? true;
     playerState.notified = playerState.notified ?? true;
     playerState.appearance = playerState.appearance
       ? { ...DEFAULT_APPEARANCE, ...playerState.appearance }
@@ -1893,6 +1895,8 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
         inventory: playerState.inventory,
         active_mission: playerState.active_mission,
         notify_at: playerState.notify_at,
+        encounter_notify_at: playerState.encounter_notify_at,
+        encounter_notified: playerState.encounter_notified,
         notified: playerState.notified,
         appearance: playerState.appearance,
         updated_at: new Date().toISOString(),
@@ -2795,13 +2799,31 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     const startedAt = new Date();
     const notifyAt = new Date(startedAt.getTime() + mission.duration_seconds * 1000);
 
+    // Pre-roll the encounter now, at mission start, so we know in advance whether
+    // one will happen and can notify the player even if the app is closed later.
+    const encounterKind = rollEncounter(mission);
+    const triggerSeconds = Math.round(mission.duration_seconds * 0.5);
+    let encounterData = null;
+    let encounterNotifyAt = null;
+    if(encounterKind){
+      const nd = MISSION_NARRATIVES[mission.id];
+      const entry = nd ? nd[encounterKind] : null;
+      if(entry && entry.enemy){
+        encounterData = { kind: encounterKind, enemy: entry.enemy, trigger_seconds: triggerSeconds };
+        encounterNotifyAt = new Date(startedAt.getTime() + triggerSeconds * 1000).toISOString();
+      }
+    }
+
     playerState.active_mission = {
       id: mission.id,
       started_at: startedAt.toISOString(),
       duration_seconds: mission.duration_seconds,
+      encounter: encounterData,
     };
     playerState.notify_at = notifyAt.toISOString();
     playerState.notified = false;
+    playerState.encounter_notify_at = encounterNotifyAt;
+    playerState.encounter_notified = !encounterData; // nothing to notify if no encounter was rolled
     queueSave();
     enterMissionView(mission, 0);
   }
@@ -2880,17 +2902,6 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     return totalTypeMs + extraPauseMs;
   }
 
-  function triggerEncounter(mission){
-    const nd = MISSION_NARRATIVES[mission.id];
-    if(!nd) return;
-    const kind = rollEncounter(mission);
-    if(!kind) return;
-    const entry = nd[kind];
-    if(!entry || !entry.enemy) return;
-    encounterActive = true;
-    showEncounterPrompt(kind, entry.enemy, entry.text);
-  }
-
   const CLOSING_LEAD_SECONDS = 6;
 
   function runMissionTimer(mission, elapsedSecondsAtStart){
@@ -2910,9 +2921,18 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       document.getElementById('progressFill').style.width = progressPct + '%';
       document.getElementById('timerDisplay').textContent = formatTime(Math.max(0,remaining));
 
-      if(!encounterRolled && elapsed >= total * 0.5){
+      const storedEncounter = playerState.active_mission && playerState.active_mission.encounter;
+      const triggerAt = storedEncounter ? storedEncounter.trigger_seconds : total * 0.5;
+      if(!encounterRolled && storedEncounter && elapsed >= triggerAt){
         encounterRolled = true;
-        triggerEncounter(mission);
+        const nd = MISSION_NARRATIVES[mission.id];
+        const entry = nd ? nd[storedEncounter.kind] : null;
+        if(entry){
+          encounterActive = true;
+          showEncounterPrompt(storedEncounter.kind, storedEncounter.enemy, entry.text);
+          playerState.encounter_notified = true;
+          queueSave();
+        }
       }
 
       const leadSeconds = Math.min(CLOSING_LEAD_SECONDS, total * 0.3);
@@ -2977,6 +2997,8 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       playerState.active_mission = null;
       playerState.notify_at = null;
       playerState.notified = true;
+      playerState.encounter_notify_at = null;
+      playerState.encounter_notified = true;
       document.getElementById('dayDisplay').textContent = 'DAY ' + String(playerState.day).padStart(3,'0');
       queueSave();
     }
