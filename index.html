@@ -2060,7 +2060,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
       el.classList.toggle('active', key === name);
     });
     navItems.forEach(item => item.classList.toggle('active', item.dataset.view === name));
-    const header = document.querySelector('.player-header');
+    const header = document.querySelector('.vitals-panel');
     if(header) header.style.display = (name === 'shelter' || name === 'status') ? '' : 'none';
   }
 
