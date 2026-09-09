@@ -108,7 +108,8 @@
   .vitals-portrait canvas{
     position:absolute; image-rendering:pixelated;
     width:102px; height:102px;
-    left:-16px; top:-5px;
+    left:-14px; top:-5px;
+    transform: scaleX(-1);
   }
   .vitals-info{ flex:1; display:flex; flex-direction:column; gap:6px; justify-content:center; min-width:0; }
   .vitals-id{
@@ -1849,7 +1850,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     return Math.floor(xp / XP_PER_LEVEL) + 1;
   }
 
-  const XP_SEGMENT_COUNT = 12;
+  const XP_SEGMENT_COUNT = 30;
   const xpSegmentsEl = document.getElementById('xpSegments');
   for(let i=0; i<XP_SEGMENT_COUNT; i++){
     const seg = document.createElement('div');
@@ -1857,7 +1858,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     xpSegmentsEl.appendChild(seg);
   }
 
-  const VITALS_SEGMENT_COUNT = 14;
+  const VITALS_SEGMENT_COUNT = 15;
 
   function renderVitalsBar(elId, value){
     const el = document.getElementById(elId);
