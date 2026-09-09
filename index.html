@@ -103,7 +103,12 @@
     width:64px; height:72px; flex-shrink:0;
     background: linear-gradient(160deg,#3a3d47,#24262e);
     border:2px solid #000; box-shadow: inset -1px -1px 0 #000, inset 1px 1px 0 #4a4d55;
-    overflow:hidden;
+    overflow:hidden; position:relative;
+  }
+  .vitals-portrait canvas{
+    position:absolute; image-rendering:pixelated;
+    width:166px; height:166px;
+    left:-44px; top:-18px;
   }
   .vitals-info{ flex:1; display:flex; flex-direction:column; gap:6px; justify-content:center; min-width:0; }
   .vitals-id{
@@ -113,13 +118,10 @@
   .vitals-lvl{ color:var(--gold); margin-left:4px; }
   .vitals-row{ display:flex; align-items:center; gap:7px; }
   .vitals-lbl{ font-family:'Press Start 2P'; font-size:7px; color:var(--ash); width:24px; flex-shrink:0; }
-  .vitals-bar-bg{
-    flex:1; height:11px; background:#000; border:1px solid #000;
-    box-shadow: inset 0 0 0 1px #23262e; display:flex; padding:1px; gap:1px;
-  }
-  .vitals-segment{ flex:1; min-width:0; }
-  .vitals-bar-bg.hp .vitals-segment{ background: linear-gradient(180deg,#ff6a4a,#c22f1a); }
-  .vitals-bar-bg.energy .vitals-segment{ background: linear-gradient(180deg,#ffd23f,#d68a1a); }
+  .vitals-img-bar{ position:relative; flex:1; height:16px; }
+  .vitals-bar-bg-img{ width:100%; height:100%; display:block; image-rendering:pixelated; }
+  .vitals-fill-clip{ position:absolute; top:0; left:0; height:100%; overflow:hidden; }
+  .vitals-bar-fill-img{ height:100%; display:block; image-rendering:pixelated; }
   .xp-segments{ flex:1; display:flex; gap:2px; }
   .xp-segment{
     flex:1; height:14px; min-width:0;
@@ -686,17 +688,23 @@
 
       <div class="vitals-panel">
         <div class="vitals-portrait">
-          <canvas id="topCharCanvas" width="64" height="64" style="width:100%; height:100%; image-rendering:pixelated;"></canvas>
+          <canvas id="topCharCanvas" width="64" height="64"></canvas>
         </div>
         <div class="vitals-info">
           <div class="vitals-id">ID: <span id="topPlayerId">—</span> <span class="vitals-lvl">LV <span id="topLevel">1</span></span></div>
           <div class="vitals-row">
             <span class="vitals-lbl">HP</span>
-            <div class="vitals-bar-bg hp" id="topHpBar"></div>
+            <div class="vitals-img-bar">
+              <img src="images/hud/bar_empty_gray.png" class="vitals-bar-bg-img">
+              <div class="vitals-fill-clip" id="topHpFillClip"><img src="images/hud/bar_hp_full.png" class="vitals-bar-fill-img"></div>
+            </div>
           </div>
           <div class="vitals-row">
             <span class="vitals-lbl">ENG</span>
-            <div class="vitals-bar-bg energy" id="topEnergyBar"></div>
+            <div class="vitals-img-bar">
+              <img src="images/hud/bar_empty_gray.png" class="vitals-bar-bg-img">
+              <div class="vitals-fill-clip" id="topEnergyFillClip"><img src="images/hud/bar_energy_full.png" class="vitals-bar-fill-img"></div>
+            </div>
           </div>
           <div class="vitals-row">
             <div class="xp-segments" id="xpSegments"></div>
@@ -1854,18 +1862,16 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
 
   const VITALS_SEGMENT_COUNT = 14;
 
-  function renderVitalsBar(elId, value){
-    const el = document.getElementById(elId);
-    if(!el) return;
+  function renderVitalsBar(clipId, value){
+    const clip = document.getElementById(clipId);
+    if(!clip) return;
+    const bar = clip.parentElement; // .vitals-img-bar
+    const fillImg = clip.querySelector('img');
     const visualMax = Math.max(value, 20); // bar reads "full" once a sensible early-game baseline is reached
-    const filled = Math.max(0, Math.min(VITALS_SEGMENT_COUNT, Math.round((value / visualMax) * VITALS_SEGMENT_COUNT)));
-    el.innerHTML = '';
-    for(let i=0; i<VITALS_SEGMENT_COUNT; i++){
-      const seg = document.createElement('div');
-      seg.className = 'vitals-segment';
-      seg.style.opacity = i < filled ? '1' : '0.15';
-      el.appendChild(seg);
-    }
+    const pct = Math.max(0, Math.min(1, value / visualMax));
+    const barWidth = bar.clientWidth || bar.offsetWidth;
+    clip.style.width = Math.round(barWidth * pct) + 'px';
+    fillImg.style.width = barWidth + 'px';
   }
 
   function updateTopBar(){
@@ -1884,8 +1890,8 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     document.getElementById('topXpLabel').textContent = xp + '/' + (level * XP_PER_LEVEL) + ' XP';
 
     if(playerState){
-      renderVitalsBar('topHpBar', playerState.hp || 0);
-      renderVitalsBar('topEnergyBar', playerState.energy || 0);
+      renderVitalsBar('topHpFillClip', playerState.hp || 0);
+      renderVitalsBar('topEnergyFillClip', playerState.energy || 0);
     }
   }
 
