@@ -21,6 +21,13 @@
 <!-- Android / general -->
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  @font-face{
+    font-family:'AntonLocal';
+    src: url('fonts/Anton-Regular.ttf') format('truetype');
+    font-display: swap;
+  }
+</style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
   :root{
@@ -343,6 +350,42 @@
   }
   .auth-switch{ font-size:14px; color:var(--signal); text-align:center; cursor:pointer; text-decoration:underline; margin-top:2px; }
   .auth-loading{ text-align:center; color:var(--ash); font-size:15px; padding:40px 0; }
+
+  .loadscreen-bg{ position:relative; width:100%; height:100%; overflow:hidden; }
+  .loadscreen-bg-img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .loadscreen-vignette{
+    position:absolute; inset:0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, transparent 25%, transparent 65%, rgba(0,0,0,0.55) 100%);
+  }
+  .loadscreen-title{
+    position:absolute; top:16%; left:0; right:0;
+    text-align:center; color:#fff;
+    text-shadow: 0 4px 18px rgba(0,0,0,0.8), 0 0 40px rgba(0,0,0,0.5);
+    line-height:0.85;
+    font-family:'AntonLocal', sans-serif;
+  }
+  .ls-l1{ font-size:26vw; display:block; letter-spacing:1px; }
+  .ls-l2{ font-size:10.1vw; display:block; letter-spacing:2px; margin-top:4px; }
+  .loadscreen-loading-wrap{ position:absolute; bottom:4%; left:8%; right:8%; }
+  .loadscreen-loading-lbl{
+    font-family:'Press Start 2P', monospace; font-size:12px; color:#fff;
+    text-shadow: 2px 2px 0 #000; margin-bottom:10px;
+  }
+  .loadscreen-loading-track{
+    width:100%; height:9px; background:#fff; border:2px solid #000;
+    border-radius:8px; overflow:hidden; box-shadow: 0 3px 8px rgba(0,0,0,0.6);
+  }
+  .loadscreen-loading-fill{
+    height:100%; width:10%;
+    background: linear-gradient(180deg, #ffb23f, #e8871a);
+    border-radius:6px 0 0 6px;
+    animation: loadscreenFill 1.8s ease-in-out infinite;
+  }
+  @keyframes loadscreenFill{
+    0%{ width:8%; }
+    70%{ width:92%; }
+    100%{ width:92%; }
+  }
 
   .status-view{ display:flex; flex-direction:column; gap:11px; }
   .account-box{
@@ -969,7 +1012,18 @@
 
       <!-- LOADING OVERLAY -->
       <div class="screen" id="loadingScreen" style="position:absolute; inset:0; z-index:20;">
-        <div class="auth-loading" style="margin:auto;">TUNING FREQUENCY...</div>
+        <div class="loadscreen-bg">
+          <img src="images/loadscreen/bg.jpg" class="loadscreen-bg-img">
+          <div class="loadscreen-vignette"></div>
+          <div class="loadscreen-title">
+            <span class="ls-l1">LAST</span>
+            <span class="ls-l2">FREQUENCY</span>
+          </div>
+          <div class="loadscreen-loading-wrap">
+            <div class="loadscreen-loading-lbl">LOADING...</div>
+            <div class="loadscreen-loading-track"><div class="loadscreen-loading-fill"></div></div>
+          </div>
+        </div>
       </div>
 
       <!-- MISSION RESULT OVERLAY -->
