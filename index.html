@@ -371,6 +371,10 @@
     font-family:'Press Start 2P', monospace; font-size:12px; color:#fff;
     text-shadow: 2px 2px 0 #000; margin-bottom:10px;
   }
+  .loadscreen-tip{
+    font-family:'VT323', monospace; font-size:17px; color:#c9d4d8;
+    text-shadow: 1px 1px 0 #000; margin-bottom:12px; min-height:22px;
+  }
   .loadscreen-loading-track{
     width:100%; height:9px; background:#fff; border:2px solid #000;
     border-radius:8px; overflow:hidden; box-shadow: 0 3px 8px rgba(0,0,0,0.6);
@@ -1021,6 +1025,7 @@
           </div>
           <div class="loadscreen-loading-wrap">
             <div class="loadscreen-loading-lbl">LOADING...</div>
+            <div class="loadscreen-tip" id="loadscreenTip"></div>
             <div class="loadscreen-loading-track"><div class="loadscreen-loading-fill"></div></div>
           </div>
         </div>
@@ -1678,6 +1683,42 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
 
   const authScreen = document.getElementById('authScreen');
   const loadingScreen = document.getElementById('loadingScreen');
+  const loadingScreenShownAt = Date.now();
+  const MIN_LOADING_MS = 4000;
+  function hideLoadingScreen(){
+    const elapsed = Date.now() - loadingScreenShownAt;
+    const wait = Math.max(0, MIN_LOADING_MS - elapsed);
+    setTimeout(() => {
+      loadingScreen.style.display = 'none';
+      clearInterval(loadingTipTimer);
+    }, wait);
+  }
+
+  const LOADING_TIPS = [
+    "Tip: Knives and machetes use energy instead of bullets.",
+    "Tip: Rest at the shelter once per day to recover energy.",
+    "Tip: A full armor set gives a bonus on top of each piece.",
+    "Tip: Radio Chips are rare — check the Garage and Depot.",
+    "Tip: Kitchen recipes give permanent stat boosts.",
+    "Tip: Each faction tracks your standing separately.",
+    "Tip: Retreating early still keeps part of your rewards.",
+    "Tip: The Journal fills in as the story moves forward.",
+    "Tip: Higher-level missions risk tougher encounters.",
+    "Tip: Check your ammo before heading into a mission.",
+  ];
+  let loadingTipTimer = null;
+  function startLoadingTips(){
+    const el = document.getElementById('loadscreenTip');
+    if(!el) return;
+    const shuffled = [...LOADING_TIPS].sort(() => Math.random() - 0.5);
+    let i = 0;
+    el.textContent = shuffled[0];
+    loadingTipTimer = setInterval(() => {
+      i = (i + 1) % shuffled.length;
+      el.textContent = shuffled[i];
+    }, 1500);
+  }
+  startLoadingTips();
   const authEmail = document.getElementById('authEmail');
   const authPassword = document.getElementById('authPassword');
   const authError = document.getElementById('authError');
@@ -1804,7 +1845,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
 
     if(error){
       showToast('LOAD ERROR — ' + error.message);
-      loadingScreen.style.display = 'none';
+      hideLoadingScreen();
       return;
     }
 
@@ -1837,7 +1878,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
 
       if(insertErr){
         showToast('SETUP ERROR — ' + insertErr.message);
-        loadingScreen.style.display = 'none';
+        hideLoadingScreen();
         return;
       }
       playerState = created;
@@ -1871,7 +1912,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     applyStateToUI();
     resumeActiveMissionIfAny();
     checkNotificationStatus();
-    loadingScreen.style.display = 'none';
+    hideLoadingScreen();
   }
 
   function applyStateToUI(){
@@ -2013,7 +2054,7 @@ const PALETTES = {"skin": {"light": ["#271920", "#99423c", "#cc8665", "#E4A47C",
     if(session){
       await onAuthSuccess();
     } else {
-      loadingScreen.style.display = 'none';
+      hideLoadingScreen();
       authScreen.style.display = 'flex';
     }
   })();
